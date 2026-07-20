@@ -100,6 +100,41 @@
             #main-content-wrapper {
                 padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
             }
+
+            /* Enlarge deck-view cards and filter controls for easier reading on phones */
+            #db-cards-container .text-\[9px\],
+            #booking-cards-container .text-\[9px\] {
+                font-size: 11px;
+            }
+            #db-cards-container .text-\[10px\],
+            #booking-cards-container .text-\[10px\] {
+                font-size: 12.5px;
+            }
+            #db-cards-container .text-\[11px\],
+            #booking-cards-container .text-\[11px\] {
+                font-size: 13px;
+            }
+            #db-cards-container .text-xs,
+            #booking-cards-container .text-xs {
+                font-size: 13.5px;
+            }
+            #db-cards-container > div,
+            #booking-cards-container > div {
+                padding: 1rem;
+            }
+            #db-cards-container h4,
+            #booking-cards-container h4 {
+                font-size: 1rem;
+            }
+
+            /* Bigger, clearer search/filter inputs on mobile */
+            #search-input,
+            #booking-search-input,
+            #reg-search {
+                font-size: 15px;
+                padding-top: 0.65rem;
+                padding-bottom: 0.65rem;
+            }
         }
     </style>
 </head>
@@ -524,33 +559,21 @@
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <label id="lbl-act-dharma" class="cursor-pointer border border-slate-200 hover:border-sky-500 bg-white p-3 rounded flex flex-col items-center justify-center text-center transition-all">
                                 <input type="radio" name="reg-activity" value="ธรรมยาตรา" checked class="sr-only" onchange="updateActivityUI('ธรรมยาตรา')">
-                                <div class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-1">
-                                    <i data-lucide="footprints" class="w-4 h-4"></i>
-                                </div>
                                 <span class="text-[11px] font-bold text-slate-700">ธรรมยาตรา</span>
                             </label>
 
                             <label id="lbl-act-light" class="cursor-pointer border border-slate-200 hover:border-sky-500 bg-white p-3 rounded flex flex-col items-center justify-center text-center transition-all">
                                 <input type="radio" name="reg-activity" value="จุดประทีป" class="sr-only" onchange="updateActivityUI('จุดประทีป')">
-                                <div class="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-1">
-                                    <i data-lucide="flame" class="w-4 h-4"></i>
-                                </div>
                                 <span class="text-[11px] font-bold text-slate-700">จุดประทีป</span>
                             </label>
 
                             <label id="lbl-act-alms" class="cursor-pointer border border-slate-200 hover:border-sky-500 bg-white p-3 rounded flex flex-col items-center justify-center text-center transition-all">
                                 <input type="radio" name="reg-activity" value="ตักบาตร" class="sr-only" onchange="updateActivityUI('ตักบาตร')">
-                                <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1">
-                                    <i data-lucide="gift" class="w-4 h-4"></i>
-                                </div>
                                 <span class="text-[11px] font-bold text-slate-700">ตักบาตร</span>
                             </label>
 
                             <label id="lbl-act-forest" class="cursor-pointer border border-slate-200 hover:border-sky-500 bg-white p-3 rounded flex flex-col items-center justify-center text-center transition-all">
                                 <input type="radio" name="reg-activity" value="ทอดผ้าป่า" class="sr-only" onchange="updateActivityUI('ทอดผ้าป่า')">
-                                <div class="w-8 h-8 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mb-1">
-                                    <i data-lucide="heart-handshake" class="w-4 h-4"></i>
-                                </div>
                                 <span class="text-[11px] font-bold text-slate-700">ทอดผ้าป่า</span>
                             </label>
                         </div>
@@ -879,10 +902,6 @@
                                 <i data-lucide="download" class="w-3.5 h-3.5"></i>
                                 <span>ส่งออก CSV</span>
                             </button>
-                            <button onclick="triggerClearBookings()" class="flex-1 md:flex-none justify-center inline-flex items-center space-x-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-3 py-1.5 rounded text-xs font-semibold transition-colors">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                <span>ล้างประวัติกิจกรรม</span>
-                            </button>
                         </div>
                     </div>
 
@@ -1127,14 +1146,17 @@
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
+            const bottomNav = document.getElementById('mobile-bottom-nav');
             const isHidden = sidebar.classList.contains('-translate-x-full');
             
             if (isHidden) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');
+                if (bottomNav) bottomNav.classList.add('hidden');
             } else {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
+                if (bottomNav) bottomNav.classList.remove('hidden');
             }
         }
 
@@ -1520,9 +1542,11 @@
             // Close mobile drawer when clicking menu items
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
+            const bottomNav = document.getElementById('mobile-bottom-nav');
             if (!sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
+                if (bottomNav) bottomNav.classList.remove('hidden');
             }
 
             // Toggle top tab styling
@@ -1893,6 +1917,16 @@
             if (!fname || !lname || !phone) {
                 showNotification("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, นามสกุล และเบอร์โทรศัพท์)", "error");
                 return;
+            }
+
+            // Block saving the same QR/scan code more than once
+            const trimmedQrRaw = (qrRaw || "").trim();
+            if (trimmedQrRaw) {
+                const isDuplicateCode = database.some(item => item.qrRaw && item.qrRaw.trim() === trimmedQrRaw);
+                if (isDuplicateCode) {
+                    showNotification("รหัสนี้เคยถูกบันทึกไว้แล้ว ไม่สามารถบันทึกรหัสซ้ำได้", "error");
+                    return;
+                }
             }
 
             const record = {
