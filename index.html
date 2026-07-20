@@ -135,6 +135,40 @@
                 padding-top: 0.65rem;
                 padding-bottom: 0.65rem;
             }
+
+            /* Flatten every menu's card into a single visual layer on mobile:
+               merge the gray header strip into the body so each panel reads as
+               one flat frame instead of a nested header+body block, freeing up
+               room to bump up the type size for comfortable phone reading. */
+            main .bg-white.rounded.border.border-slate-200 > .bg-slate-50.border-b.border-slate-200 {
+                background-color: transparent;
+                border-bottom: none;
+                padding-bottom: 0.4rem;
+            }
+            main .bg-white.rounded.border.border-slate-200 {
+                border-radius: 0.75rem;
+            }
+
+            /* Enlarge type across every menu view (scan, register, ticket, scheduler, database, bookings) */
+            main .text-\[9px\] { font-size: 12px; }
+            main .text-\[10px\] { font-size: 13px; }
+            main .text-\[11px\] { font-size: 13.5px; }
+            main .text-xs { font-size: 14.5px; }
+            main .text-sm { font-size: 16px; }
+            main h1, main h2, main h3, main h4 { font-size: 1.05rem; }
+            main label { font-size: 13px; }
+            main input[type="text"],
+            main input[type="tel"],
+            main input[type="number"],
+            main select,
+            main textarea {
+                font-size: 15px;
+            }
+
+            /* Same single-layer + larger-type treatment for the side menu drawer */
+            #sidebar .text-\[9px\] { font-size: 11.5px; }
+            #sidebar .text-xs { font-size: 14px; }
+            #sidebar nav button { font-size: 14px; padding-top: 0.6rem; padding-bottom: 0.6rem; }
         }
     </style>
 </head>
@@ -179,8 +213,9 @@
                 <i data-lucide="ticket" class="w-5 h-5"></i>
                 <span class="text-[10px] leading-none">รับบัตร</span>
             </button>
-            <button onclick="toggleMobileSidebar()" class="mobile-nav-btn flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-slate-400 transition-colors">
+            <button onclick="toggleMobileSidebar()" class="mobile-nav-btn flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-slate-400 transition-colors relative">
                 <i data-lucide="grid" class="w-5 h-5 text-slate-500"></i>
+                <span id="mbadge-more-count" class="hidden absolute top-1 right-4 min-w-[15px] h-[15px] px-1 rounded-full bg-slate-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">0</span>
                 <span class="text-[10px] leading-none">อื่นๆ</span>
             </button>
         </div>
@@ -1075,6 +1110,7 @@
             updateDatabaseUI();
             requestCameraPermissions();
             updateSessionsUI();
+            updateMoreMenuBadge();
             
             // Set standard dates in picker
             const schDateInput = document.getElementById('sch-date');
@@ -1519,6 +1555,22 @@
         });
 
         // Tab Switching Engine with Sidebar support
+        // Show how many extra menus (beyond the ones already pinned to the bottom bar)
+        // are tucked away inside the side drawer, so mobile users know it's not empty
+        function updateMoreMenuBadge() {
+            const allTabs = ['scan', 'register', 'scheduler', 'ticket', 'database', 'bookings-list'];
+            const bottomNavTabs = ['scan', 'register', 'bookings-list', 'ticket'];
+            const extraCount = allTabs.filter(id => !bottomNavTabs.includes(id)).length;
+            const badge = document.getElementById('mbadge-more-count');
+            if (!badge) return;
+            if (extraCount > 0) {
+                badge.textContent = extraCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
         function switchTab(tabId) {
             // Stop scanning if camera is active and user changes tab
             if (tabId !== 'scan' && isScannerRunning) {
@@ -1789,6 +1841,16 @@
             let phone = "";
 
             const cleanedText = text.trim();
+
+            // Block duplicate codes immediately on scan/manual entry, before any field gets populated
+            if (cleanedText) {
+                const isDuplicateRaw = database.some(item => item.qrRaw && item.qrRaw.trim() === cleanedText);
+                const isDuplicatePhone = /^[0-9]+$/.test(cleanedText) && database.some(item => item.phone && item.phone.trim() === cleanedText);
+                if (isDuplicateRaw || isDuplicatePhone) {
+                    showNotification("รหัสหรือเบอร์นี้เคยถูกบันทึกไว้แล้ว ไม่สามารถกรอกข้อมูลซ้ำได้", "error");
+                    return;
+                }
+            }
 
             // Try JSON parser format
             if (cleanedText.startsWith('{') && cleanedText.endsWith('}')) {
