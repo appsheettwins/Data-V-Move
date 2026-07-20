@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner & Database Manager Pro</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Prompt & Sarabun for beautiful Thai Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- HTML5 QR Code Library for robust scanning -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+        }
+        /* Custom scanner laser animation */
+        .scanner-laser {
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: linear-gradient(to right, transparent, #10b981, transparent);
+            animation: scan-laser 2.5s infinite linear;
+        }
+        @keyframes scan-laser {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        /* Collapsed Sidebar CSS transitions and rules */
+        #sidebar {
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #sidebar.collapsed {
+            width: 5rem; /* 80px */
+        }
+        #sidebar.collapsed .sidebar-brand-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            display: none;
+        }
+        #sidebar.collapsed .sidebar-header {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        #sidebar.collapsed nav {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        #sidebar.collapsed nav p {
+            display: none;
+        }
+        #sidebar.collapsed nav button {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 0.75rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #sidebar.collapsed nav button span {
+            display: none;
+        }
+        #sidebar.collapsed nav button i {
+            margin-right: 0 !important;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+        #sidebar.collapsed .sidebar-footer {
+            display: none;
+        }
+    </style>
+</head>
+<body class="h-full flex overflow-hidden text-slate-800">
+
+    <!-- Mobile Header Bar -->
+    <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-emerald-600 to-teal-700 flex items-center justify-between px-4 z-30 shadow-md">
+        <button onclick="toggleMobileSidebar()" class="p-2 text-white hover:bg-emerald-700/50 rounded-xl transition-all">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+        <span class="text-white font-bold tracking-wide">QR Scan & Register</span>
+        <span class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-full text-[10px] font-medium bg-emerald-500/30 text-emerald-50 text-white">
+            <span class="w-1.5 h-1.5 inline-block rounded-full bg-emerald-300 animate-ping"></span>
+            ออนไลน์
+        </span>
+    </div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-100 flex flex-col transform -translate-x-full md:translate-x-0 md:static transition-all duration-300 ease-in-out border-r border-slate-800">
+        <!-- Sidebar Brand Header -->
+        <div class="h-16 md:h-20 bg-slate-950 flex items-center px-6 border-b border-slate-800 justify-between sidebar-header">
+            <div class="flex items-center space-x-3 sidebar-brand-text">
+                <div class="p-2 bg-emerald-600 rounded-xl text-white">
+                    <i data-lucide="qr-code" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold tracking-wide text-white">QR Filter Pro</h1>
+                    <p class="text-[10px] text-emerald-400">ระบบบริหารสิทธิ์กิจกรรม</p>
+                </div>
+            </div>
+            <!-- Collapse Button (Desktop Only) -->
+            <button onclick="toggleCollapseSidebar()" id="btn-collapse-sidebar" class="hidden md:flex p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors" title="ยุบ/ขยายเมนูด้านข้าง">
+                <i data-lucide="chevron-left" class="w-5 h-5" id="collapse-icon"></i>
+            </button>
+            <!-- Close mobile sidebar btn -->
+            <button onclick="toggleMobileSidebar()" class="md:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Sidebar Navigation Menu Items -->
+        <nav class="flex-grow p-4 space-y-1.5 overflow-y-auto">
+            <p class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">หน้าหลักและสแกนเนอร์</p>
+            
+            <button onclick="switchTab('scan')" id="tab-scan" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md shadow-emerald-500/10">
+                <i data-lucide="scan-line" class="w-4 h-4"></i>
+                <span>สแกน QR Code</span>
+            </button>
+            <button onclick="switchTab('register')" id="tab-register" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                <span>ลงทะเบียนกิจกรรม</span>
+            </button>
+            <button onclick="switchTab('bookings-list')" id="tab-bookings-list" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                <span>ข้อมูลลงทะเบียนทั้งหมด</span>
+                <span id="badge-bookings-count" class="ml-auto py-0.5 px-1.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">0</span>
+            </button>
+            
+            <p class="pt-4 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">การตั้งเวลาและจัดเตรียม</p>
+            <button onclick="switchTab('scheduler')" id="tab-scheduler" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="alarm-clock" class="w-4 h-4"></i>
+                <span>ตารางเวลาสแกน</span>
+                <span id="badge-sessions-count" class="ml-auto py-0.5 px-1.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">0</span>
+            </button>
+
+            <p class="pt-4 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">การสแกนและจัดการรับบัตร</p>
+            <button onclick="switchTab('ticket')" id="tab-ticket" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="ticket" class="w-4 h-4"></i>
+                <span>รับบัตรเข้าร่วมงาน</span>
+            </button>
+
+            <p class="pt-4 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">ข้อมูลและทะเบียนรายชื่อ</p>
+            <button onclick="switchTab('database')" id="tab-database" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span>คลังรายชื่อผู้สแกน</span>
+                <span id="badge-count" class="ml-auto py-0.5 px-1.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">0</span>
+            </button>
+            <button onclick="switchTab('generator')" id="tab-generator" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>สร้าง QR ทดสอบ</span>
+            </button>
+        </nav>
+
+        <!-- Sidebar footer status -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/50 text-xs text-slate-500 space-y-1 sidebar-footer">
+            <div class="flex justify-between items-center">
+                <span>ความปลอดภัย</span>
+                <span class="text-emerald-500 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ปกติ</span>
+            </div>
+            <p class="text-[9px] text-slate-600 text-center pt-2 border-t border-slate-900">QR Manager Pro V3.5 © 2026</p>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar Dark Overlay backdrop -->
+    <div id="sidebar-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/50 z-35 hidden md:hidden"></div>
+
+    <!-- Main Content Container Frame -->
+    <div class="flex-grow flex flex-col min-w-0 overflow-y-auto mt-16 md:mt-0">
+        <!-- Toast Notification system for status alert -->
+        <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform transition-all duration-300 translate-y-[-100px] opacity-0 pointer-events-none">
+            <div class="bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-800">
+                <span id="toast-icon-wrapper" class="p-1 rounded-lg bg-emerald-500 text-white">
+                    <i data-lucide="info" class="w-4 h-4" id="toast-icon"></i>
+                </span>
+                <span id="toast-msg" class="text-sm font-medium">ทำรายการสำเร็จ</span>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Dialog Modal -->
+        <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-300">
+                <div class="p-6">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900" id="confirm-title">ยืนยันการทำรายการ</h3>
+                    <p class="text-sm text-slate-500 mt-2" id="confirm-description">คุณต้องการยืนยันการทำรายการนี้ใช่หรือไม่?</p>
+                </div>
+                <div class="bg-slate-50 px-6 py-4 flex justify-end space-x-3">
+                    <button id="btn-confirm-cancel" class="px-4 py-2 bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-sm font-semibold transition-all">ยกเลิก</button>
+                    <button id="btn-confirm-agree" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-all shadow-sm">ยืนยันทำรายการ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Contact Record Modal -->
+        <div id="edit-contact-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden transform scale-95 transition-transform duration-300">
+                <div class="p-6 space-y-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                        <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <i data-lucide="edit-3" class="w-5 h-5"></i>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-900">แก้ไขข้อมูลรายชื่อ</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="edit-contact-fname" class="block text-xs font-bold text-slate-600 mb-1">ชื่อจริง <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-contact-fname" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                        <div>
+                            <label for="edit-contact-lname" class="block text-xs font-bold text-slate-600 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-contact-lname" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                        <div>
+                            <label for="edit-contact-phone" class="block text-xs font-bold text-slate-600 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <input type="tel" id="edit-contact-phone" inputmode="numeric" oninput="filterNumericInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="edit-contact-qrraw" class="block text-xs font-bold text-slate-600 mb-1">ข้อมูลต้นฉบับ QR Code</label>
+                        <textarea id="edit-contact-qrraw" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/20"></textarea>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-6 py-4 flex justify-end space-x-3">
+                    <button onclick="closeEditContactModal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-sm font-semibold transition-all">ยกเลิก</button>
+                    <button onclick="saveEditedContact()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-all shadow-sm">บันทึกการแก้ไข</button>
+                </div>
+            </div>
+        </div>
+
+        <main class="flex-grow w-full px-4 sm:px-6 lg:px-8 py-6">
+
+            <!-- VIEW 1: SCAN QR CODE -->
+            <div id="view-scan" class="space-y-6">
+                <!-- Camera & Scanner Control Panel -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-2">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="aperture" class="w-5 h-5 text-emerald-600 animate-spin" style="animation-duration: 8s;"></i>
+                            <h2 class="font-bold text-slate-700">กล้องสแกน QR Code เพื่อเก็บข้อมูล</h2>
+                        </div>
+                        <!-- Camera selection -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <select id="camera-select" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-600 w-full sm:w-48">
+                                <option value="">กำลังโหลดกล้อง...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Scanner Viewport Area -->
+                    <div class="p-6 flex flex-col items-center">
+                        <div class="relative w-full max-w-sm aspect-square bg-slate-900 rounded-2xl overflow-hidden shadow-inner border-4 border-slate-800 flex flex-col justify-center items-center">
+                            <!-- Scanning Laser Line overlay (active when scanning) -->
+                            <div id="scanner-laser" class="scanner-laser hidden"></div>
+                            
+                            <!-- Main QR engine container -->
+                            <div id="reader" class="w-full h-full bg-slate-900"></div>
+
+                            <!-- Fallback instruction state -->
+                            <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-4 bg-slate-900 z-10">
+                                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-emerald-500 shadow-lg">
+                                    <i data-lucide="camera-off" class="w-8 h-8"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-200">ยังไม่ได้เปิดใช้งานกล้อง</p>
+                                    <p class="text-xs mt-1 text-slate-500">กรุณากดปุ่ม "เปิดใช้งานกล้อง" หรืออัปโหลดไฟล์รูปภาพ QR Code ด้านล่าง</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scanner Controls Buttons -->
+                        <div class="mt-6 flex flex-wrap justify-center gap-3 w-full max-w-sm">
+                            <button id="btn-start-camera" onclick="startScanner()" class="flex-1 inline-flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-colors duration-200">
+                                <i data-lucide="video" class="w-4 h-4"></i>
+                                <span>เปิดกล้อง</span>
+                            </button>
+                            <button id="btn-stop-camera" onclick="stopScanner()" disabled class="flex-1 inline-flex items-center justify-center space-x-2 bg-slate-100 text-slate-400 font-medium py-3 px-4 rounded-xl transition-all duration-200 cursor-not-allowed">
+                                <i data-lucide="video-off" class="w-4 h-4"></i>
+                                <span>ปิดกล้อง</span>
+                            </button>
+                        </div>
+
+                        <!-- Upload File alternative -->
+                        <div class="mt-6 w-full max-w-sm border-t border-dashed border-slate-200 pt-5 text-center">
+                            <label class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">หรือ สแกนผ่านรูปภาพจากเครื่อง</label>
+                            <label for="image-upload" class="cursor-pointer inline-flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-slate-200 w-full justify-center">
+                                <i data-lucide="image" class="w-4 h-4 text-slate-500"></i>
+                                <span>เลือกรูปภาพ QR Code</span>
+                            </label>
+                            <input id="image-upload" type="file" accept="image/*" class="hidden" onchange="scanFromFile(event)">
+                        </div>
+
+                        <!-- Manual numeric QR data entry alternative -->
+                        <div class="mt-5 w-full max-w-sm border-t border-dashed border-slate-200 pt-5 text-center">
+                            <label for="manual-qr-input" class="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">หรือ ป้อนข้อมูลตัวเลข QR Code ด้วยตนเอง</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="manual-qr-input" inputmode="numeric" oninput="filterNumericInput(this)" placeholder="พิมพ์ตัวเลขจาก QR Code..." class="flex-1 bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all">
+                                <button onclick="processManualQrInput()" class="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                    <span>ใช้ข้อมูล</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form: Scan Result & Auto-Parse Fields -->
+                <div id="result-container" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5 relative hidden transition-all duration-500">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                        <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        </span>
+                        <h3 class="font-bold text-slate-800 text-lg">ตรวจสอบและบันทึกผู้สแกน</h3>
+                    </div>
+
+                    <!-- Fields Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="res-fname" class="block text-xs font-bold text-slate-600 mb-1.5">ชื่อจริง <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i data-lucide="user" class="w-4 h-4"></i>
+                                </span>
+                                <input type="text" id="res-fname" placeholder="ป้อนชื่อจริง" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="res-lname" class="block text-xs font-bold text-slate-600 mb-1.5">นามสกุล <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i data-lucide="users" class="w-4 h-4"></i>
+                                </span>
+                                <input type="text" id="res-lname" placeholder="ป้อนนามสกุล" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="res-phone" class="block text-xs font-bold text-slate-600 mb-1.5">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i data-lucide="phone" class="w-4 h-4"></i>
+                                </span>
+                                <input type="tel" id="res-phone" placeholder="เช่น 0812345678" inputmode="numeric" oninput="filterNumericInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Raw Data Content Area -->
+                    <div>
+                        <label for="res-qr-raw" class="block text-xs font-bold text-slate-600 mb-1.5">ข้อมูลต้นฉบับใน QR Code (Raw Data)</label>
+                        <textarea id="res-qr-raw" rows="3" readonly class="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-500 resize-none focus:outline-none cursor-default" placeholder="รอรับข้อมูลจากการสแกน..."></textarea>
+                    </div>
+
+                    <!-- Actions for saving data -->
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="sendToRegistrationDirect()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-200 flex items-center space-x-1 font-semibold transition-all">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                            <span>นำรายชื่อนี้ไปลงทะเบียนกิจกรรม</span>
+                        </button>
+                        <div class="flex space-x-3">
+                            <button onclick="resetResultForm()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm font-semibold transition-colors duration-200">
+                                ล้างข้อมูล
+                            </button>
+                            <button onclick="saveScannedData()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold shadow-md shadow-emerald-600/10 transition-colors duration-200 flex items-center space-x-1.5">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>บันทึกรายชื่อ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: REGISTRATION FORM -->
+            <div id="view-register" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+                    <!-- Heading -->
+                    <div class="border-b border-slate-100 pb-4">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                            <i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i>
+                            <span id="register-header-title">ลงทะเบียนเข้าร่วมกิจกรรม</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">ค้นหาผู้ใช้ที่เคยสแกนไว้ หรือพิมพ์ข้อมูลใหม่ เพื่อลงทะเบียนระบุวัน เวลา และสถานที่โดยอัตโนมัติตามตัวเลือกที่กำหนดล่วงหน้า</p>
+                    </div>
+
+                    <!-- Step 1: Select/Search User -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="block text-sm font-bold text-slate-700">1. ค้นหารายชื่อเดิม หรือป้อนใหม่</label>
+                            <span class="text-xs text-slate-400 flex items-center gap-1">
+                                <i data-lucide="help-circle" class="w-3 h-3"></i>พิมพ์ค้นหาเพื่อความเร็ว
+                            </span>
+                        </div>
+
+                        <!-- Autocomplete Search Input -->
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="reg-search" oninput="searchContactForRegister()" placeholder="ค้นหารายชื่อจากฐานข้อมูลเดิม..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium">
+                            <button onclick="clearRegSearch()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 hidden" id="btn-clear-reg-search">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+
+                            <!-- Autocomplete Suggestions Dropdown -->
+                            <div id="reg-search-results" class="absolute left-0 right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-slate-150 max-h-60 overflow-y-auto z-50 hidden divide-y divide-slate-50">
+                                <!-- Injected dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1.5: Display Selected / Manual Inputs -->
+                    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="reg-fname" class="block text-xs font-bold text-slate-600 mb-1">ชื่อจริง <span class="text-red-500">*</span></label>
+                            <input type="text" id="reg-fname" placeholder="ชื่อจริงผู้ลงทะเบียน" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                        <div>
+                            <label for="reg-lname" class="block text-xs font-bold text-slate-600 mb-1">นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" id="reg-lname" placeholder="นามสกุลผู้ลงทะเบียน" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                        <div>
+                            <label for="reg-phone" class="block text-xs font-bold text-slate-600 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <input type="tel" id="reg-phone" placeholder="เช่น 0812345678" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Activity Selection -->
+                    <div class="space-y-3">
+                        <label class="block text-sm font-bold text-slate-700">2. เลือกกิจกรรมที่ประสงค์เข้าร่วม</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <label id="lbl-act-dharma" class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 bg-white p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all">
+                                <input type="radio" name="reg-activity" value="ธรรมยาตรา" checked class="sr-only" onchange="updateActivityUI('ธรรมยาตรา')">
+                                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2">
+                                    <i data-lucide="footprints" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">ธรรมยาตรา</span>
+                            </label>
+
+                            <label id="lbl-act-light" class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 bg-white p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all">
+                                <input type="radio" name="reg-activity" value="จุดประทีป" class="sr-only" onchange="updateActivityUI('จุดประทีป')">
+                                <div class="w-10 h-10 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mb-2">
+                                    <i data-lucide="flame" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">จุดประทีป</span>
+                            </label>
+
+                            <label id="lbl-act-alms" class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 bg-white p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all">
+                                <input type="radio" name="reg-activity" value="ตักบาตร" class="sr-only" onchange="updateActivityUI('ตักบาตร')">
+                                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+                                    <i data-lucide="gift" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">ตักบาตร</span>
+                            </label>
+
+                            <label id="lbl-act-forest" class="cursor-pointer border-2 border-slate-200 hover:border-emerald-500 bg-white p-4 rounded-xl flex flex-col items-center justify-center text-center transition-all">
+                                <input type="radio" name="reg-activity" value="ทอดผ้าป่า" class="sr-only" onchange="updateActivityUI('ทอดผ้าป่า')">
+                                <div class="w-10 h-10 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mb-2">
+                                    <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">ทอดผ้าป่า</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Sub-Category -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <!-- Sub-activity selection -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-600">3. เลือกกิจกรรมย่อย / สถานที่</label>
+                            <select id="reg-subactivity-select" onchange="handleRegSubActivityChange()" class="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-700 font-semibold">
+                                <option value="โลตัสแลนด์">โลตัสแลนด์</option>
+                                <option value="อนุสรณ์สถานมหาวิหาร">อนุสรณ์สถานมหาวิหาร</option>
+                                <option value="วัดสองพี่น้อง">วัดสองพี่น้อง</option>
+                                <option value="วัดโบสถ์บน">วัดโบสถ์บน</option>
+                                <option value="custom">-- ระบุวัน/สถานที่อื่นๆ ด้วยตนเอง --</option>
+                            </select>
+                            
+                            <!-- Custom Sub-activity text field -->
+                            <div id="custom-subactivity-wrapper" class="hidden mt-2">
+                                <input type="text" id="reg-subactivity-custom" placeholder="ระบุสถานที่จัดงานเอง" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-700">
+                            </div>
+                        </div>
+
+                        <!-- Quantity Selector -->
+                        <div class="space-y-1.5">
+                            <label for="reg-quantity" class="block text-xs font-bold text-slate-600">4. จำนวนผู้รับบัตร (ใบ) <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                    <i data-lucide="hash" class="w-4 h-4"></i>
+                                </span>
+                                <input type="number" id="reg-quantity" value="1" min="1" max="100" class="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Confirm Action buttons -->
+                    <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                        <button id="btn-cancel-edit-booking" onclick="cancelEditBooking()" class="hidden px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-sm font-semibold transition-colors duration-200">
+                            ยกเลิกการแก้ไข
+                        </button>
+                        <button onclick="clearRegForm()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm font-semibold transition-colors duration-200">
+                            ล้างข้อมูล
+                        </button>
+                        <button onclick="saveRegistrationData()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold shadow-md shadow-emerald-600/10 transition-colors duration-200 flex items-center space-x-1.5">
+                            <i data-lucide="check-square" class="w-4 h-4"></i>
+                            <span id="reg-btn-text">บันทึกกิจกรรมที่จอง</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2.1: SCAN SESSION SCHEDULER -->
+            <div id="view-scheduler" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+                    <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                                <i data-lucide="alarm-clock" class="w-5 h-5 text-emerald-600"></i>
+                                <span>ตารางเวลาและกำหนดเวลาสแกน</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">ระบุวันและเวลาจัดงานพร้อมคัดกรองกิจกรรมหลัก/ย่อยล่วงหน้า เพื่อสแกนคัดกรองสิทธิ์รับบัตรอย่างแม่นยำ</p>
+                        </div>
+                        <button onclick="resetDefaultSessions()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center space-x-1 transition-colors">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span>รีเซ็ตค่ามาตรฐาน</span>
+                        </button>
+                    </div>
+
+                    <!-- Add New / Edit Session Form -->
+                    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
+                        <h3 id="sch-form-title" class="text-xs font-bold text-slate-600 uppercase tracking-wider">เพิ่มกำหนดเวลาล่วงหน้า</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            <div>
+                                <label for="sch-activity" class="block text-[10px] font-bold text-slate-500 mb-1">กิจกรรมหลัก</label>
+                                <select id="sch-activity" class="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold">
+                                    <option value="ตักบาตร">ตักบาตร</option>
+                                    <option value="ธรรมยาตรา">ธรรมยาตรา</option>
+                                    <option value="จุดประทีป">จุดประทีป</option>
+                                    <option value="ทอดผ้าป่า">ทอดผ้าป่า</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="sch-subactivity" class="block text-[10px] font-bold text-slate-500 mb-1">กิจกรรมย่อย (สถานที่)</label>
+                                <select id="sch-subactivity" onchange="handleSchSubActivityChange()" class="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-semibold">
+                                    <option value="โลตัสแลนด์">โลตัสแลนด์</option>
+                                    <option value="อนุสรณ์สถานมหาวิหาร">อนุสรณ์สถานมหาวิหาร</option>
+                                    <option value="วัดสองพี่น้อง">วัดสองพี่น้อง</option>
+                                    <option value="วัดโบสถ์บน">วัดโบสถ์บน</option>
+                                    <option value="custom">-- ระบุเอง --</option>
+                                </select>
+                                <input type="text" id="sch-subactivity-custom" placeholder="ระบุสถานที่ย่อยเอง" class="w-full bg-white border border-slate-200 rounded-lg py-1 px-2 text-[10px] focus:outline-none focus:ring-1 focus:ring-emerald-500 mt-1.5 hidden">
+                            </div>
+                            <div>
+                                <label for="sch-date" class="block text-[10px] font-bold text-slate-500 mb-1">วันที่จัดงาน (ปฏิทิน)</label>
+                                <input type="date" id="sch-date" class="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label for="sch-start" class="block text-[10px] font-bold text-slate-500 mb-1">เวลาเริ่มรับบัตร</label>
+                                <input type="time" id="sch-start" class="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label for="sch-end" class="block text-[10px] font-bold text-slate-500 mb-1">เวลาสิ้นสุด</label>
+                                <input type="time" id="sch-end" class="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button id="btn-cancel-edit-session" onclick="cancelEditSession()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold py-2 px-4 transition-all">
+                                ยกเลิกการแก้ไข
+                            </button>
+                            <button id="btn-save-session" onclick="addScanSession()" class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold py-2 px-4 shadow-sm flex items-center space-x-1 transition-all">
+                                <i data-lucide="plus" class="w-3.5 h-3.5" id="sch-btn-icon"></i>
+                                <span id="sch-btn-text">เพิ่มลงตารางเวลา</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scan Sessions List -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">รายการกำหนดเวลาทั้งหมดในระบบ</label>
+                        <div id="sessions-list-container" class="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden bg-white">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2.5: TICKET CHECK-IN -->
+            <div id="view-ticket" class="space-y-6 hidden">
+                <!-- Active Scanning Session Policy Configuration -->
+                <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-lg border border-slate-800 space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2 pb-3 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <div class="p-1.5 bg-indigo-500/30 text-indigo-400 rounded-lg">
+                                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-100 text-sm">การตั้งค่าตัวกรองเซสชันรับบัตร (Active Session Filter)</h3>
+                                <p class="text-[10px] text-indigo-300 font-medium">บังคับแสดงข้อมูลและสแกนเฉพาะตรงตามตารางที่กำหนดเท่านั้น</p>
+                            </div>
+                        </div>
+                        <span id="session-status-badge" class="inline-flex py-1 px-3 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            กรุณาเลือกตารางจัดงาน
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="active-session-select" class="block text-xs font-bold text-slate-400 mb-1.5">กรองและสแกนสำหรับรอบ:</label>
+                            <select id="active-session-select" onchange="applyActiveSessionFilter()" class="w-full bg-slate-800 border border-slate-700 text-slate-100 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold">
+                                <option value="">-- กำลังโหลดตารางเวลาสแกน... --</option>
+                                <!-- Injected dynamically from scheduled list -->
+                            </select>
+                        </div>
+                        <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-center">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เงื่อนไขสแกนปัจจุบัน:</p>
+                            <p id="active-session-summary" class="text-xs font-semibold text-slate-200 mt-1">กำลังตรวจสอบตารางเวลา...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket Dashboard Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase">ยอดผู้เข้าร่วมทั้งหมดในรอบนี้</p>
+                            <h3 id="ticket-stat-total" class="text-2xl font-bold text-slate-700 mt-1">0 ท่าน <span class="text-xs text-slate-400 font-normal">(0 คิว)</span></h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 text-slate-500">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-amber-500 uppercase">ยังไม่ได้รับบัตร</p>
+                            <h3 id="ticket-stat-pending" class="text-2xl font-bold text-amber-600 mt-1">0 ใบ <span class="text-xs text-amber-400 font-normal">(0 คิว)</span></h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-amber-50 text-amber-500 animate-pulse">
+                            <i data-lucide="clock" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-emerald-500 uppercase">รับบัตรสำเร็จแล้ว</p>
+                            <h3 id="ticket-stat-received" class="text-2xl font-bold text-emerald-600 mt-1">0 ใบ <span class="text-xs text-emerald-400 font-normal">(0 คิว)</span></h3>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-50 text-emerald-500">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    <!-- QR Scanner Check-in Side -->
+                    <div class="md:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center">
+                        <div class="w-full border-b border-slate-100 pb-3 mb-4 flex items-center space-x-2">
+                            <i data-lucide="qr-code" class="w-5 h-5 text-emerald-600"></i>
+                            <h3 class="font-bold text-slate-800">กล้องสแกนเพื่อรับบัตรเฉพาะรอบ</h3>
+                        </div>
+                        
+                        <div class="relative w-full aspect-square bg-slate-900 rounded-xl overflow-hidden border-2 border-slate-800 flex flex-col justify-center items-center max-w-[280px]">
+                            <div id="ticket-scanner-laser" class="scanner-laser hidden"></div>
+                            <div id="ticket-reader" class="w-full h-full bg-slate-900"></div>
+                            <div id="ticket-scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-slate-400 space-y-3 bg-slate-900 z-10">
+                                <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-emerald-500 shadow-md">
+                                    <i data-lucide="video-off" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-xs font-medium text-slate-200">ยังไม่เปิดใช้กล้องรับบัตร</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex gap-2 w-full max-w-[280px]">
+                            <button id="btn-ticket-start" onclick="startTicketScanner()" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center space-x-1">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                                <span>เปิดกล้องรับบัตร</span>
+                            </button>
+                            <button id="btn-ticket-stop" onclick="stopTicketScanner()" disabled class="flex-1 py-2 px-3 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 cursor-not-allowed">
+                                <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                                <span>ปิดกล้อง</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Ticket Manager Side -->
+                    <div class="md:col-span-7 bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col">
+                        <div class="w-full border-b border-slate-100 pb-3 mb-4 flex justify-between items-center flex-wrap gap-2">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="search" class="w-5 h-5 text-indigo-600"></i>
+                                <h3 class="font-bold text-slate-800">ค้นหาคิวรับบัตร (ตรงกิจกรรมและรอบที่สอดคล้อง)</h3>
+                            </div>
+                        </div>
+
+                        <!-- Search filter in check-in -->
+                        <div class="relative mb-4">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="ticket-search" oninput="searchTicketList()" placeholder="พิมพ์ค้นหา ชื่อ-นามสกุล, เบอร์โทร..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium">
+                        </div>
+
+                        <!-- Dynamic List of ticket status -->
+                        <div class="flex-grow overflow-y-auto max-h-[300px] border border-slate-100 rounded-xl divide-y divide-slate-100" id="ticket-list-container">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: SAVED DATA / DATABASE -->
+            <div id="view-database" class="space-y-6 hidden">
+                <!-- Filter & Searching Card -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+                    
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <!-- Heading -->
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                                <i data-lucide="user-check" class="w-5 h-5 text-emerald-600"></i>
+                                <span>คลังรายชื่อผู้สแกน</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">รายชื่อบุคคลที่ได้ทำการสแกน QR Code หรือเพิ่มด้วยระบบ</p>
+                        </div>
+
+                        <!-- General Database Actions (Export/Clear) -->
+                        <div class="flex items-center gap-2 self-end md:self-auto">
+                            <button id="btn-export-csv" onclick="exportDataToCSV()" class="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/50 px-4 py-2 rounded-xl text-xs font-semibold transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>ส่งออก CSV</span>
+                            </button>
+                            <button onclick="triggerClearDatabase()" class="inline-flex items-center space-x-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/50 px-4 py-2 rounded-xl text-xs font-semibold transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <span>ล้างตารางรายชื่อ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Filters Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-4 border-t border-slate-100">
+                        <!-- Search Input -->
+                        <div class="sm:col-span-8 relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="search-input" onkeyup="filterData()" placeholder="ค้นหาด้วย ชื่อ, นามสกุล หรือเบอร์โทร..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium">
+                            <!-- Clear Search button -->
+                            <button onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                <i data-lucide="x" class="w-4 h-4 hidden" id="btn-clear-search"></i>
+                            </button>
+                        </div>
+
+                        <!-- Statistics Info Summary -->
+                        <div class="sm:col-span-4 bg-slate-50 rounded-xl border border-slate-150 p-2.5 flex items-center justify-around text-center text-xs">
+                            <div>
+                                <p class="text-slate-400 font-medium">ทั้งหมดในคลัง</p>
+                                <p id="stat-total" class="text-base font-bold text-slate-700 mt-0.5 font-mono">0</p>
+                            </div>
+                            <div class="w-px h-6 bg-slate-200"></div>
+                            <div>
+                                <p class="text-slate-400 font-medium">ค้นหาเจอ</p>
+                                <p id="stat-showing" class="text-base font-bold text-emerald-600 mt-0.5 font-mono">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Lists / Displays -->
+                <!-- Desktop Layout (Hidden on Mobile) -->
+                <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="db-contacts-table">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <th class="py-4 px-5 w-16">#</th>
+                                    <th class="py-4 px-5">ชื่อ-นามสกุล</th>
+                                    <th class="py-4 px-5">เบอร์โทรศัพท์</th>
+                                    <th class="py-4 px-5">ข้อมูล QR Code</th>
+                                    <th class="py-4 px-5">วันเวลาที่สแกน</th>
+                                    <th class="py-4 px-5 text-center w-36">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="db-table-body" class="divide-y divide-slate-100 text-sm text-slate-600">
+                                <!-- Populated dynamically via Javascript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mobile Layout (Cards List, Hidden on Desktop) -->
+                <div id="db-cards-container" class="space-y-3 md:hidden">
+                    <!-- Populated dynamically via Javascript -->
+                </div>
+
+                <!-- Empty Database Fallback state -->
+                <div id="db-empty-state" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center flex flex-col items-center justify-center space-y-4 hidden">
+                    <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                        <i data-lucide="database-backup" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-base">ไม่พบข้อมูลผู้สแกน</h3>
+                        <p class="text-slate-400 text-xs mt-1">ยังไม่มีการบันทึกข้อมูลรายชื่อ หรือไม่มีประวัติที่ตรงกับคำที่ค้นหา</p>
+                    </div>
+                    <button onclick="switchTab('scan')" class="inline-flex items-center space-x-1 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                        <i data-lucide="scan-line" class="w-3.5 h-3.5"></i>
+                        <span>เริ่มสแกน QR Code</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW 3.5: ALL BOOKINGS LIST -->
+            <div id="view-bookings-list" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                                <i data-lucide="clipboard-list" class="w-5 h-5 text-emerald-600"></i>
+                                <span>ข้อมูลลงทะเบียนเข้าร่วมกิจกรรมทั้งหมด</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">ตารางรายการผู้ลงทะเบียนจองเข้าร่วมงานบุญและกิจกรรมทั้งหมดในระบบ</p>
+                        </div>
+
+                        <!-- Bookings Actions -->
+                        <div class="flex items-center gap-2 self-end md:self-auto">
+                            <button id="btn-export-bookings-csv" onclick="exportBookingsToCSV()" class="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/50 px-4 py-2 rounded-xl text-xs font-semibold transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>ส่งออก CSV</span>
+                            </button>
+                            <button onclick="triggerClearBookings()" class="inline-flex items-center space-x-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/50 px-4 py-2 rounded-xl text-xs font-semibold transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                <span>ล้างรายการลงทะเบียน</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Bookings stats -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-4 border-t border-slate-100">
+                        <div class="sm:col-span-8 relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="booking-search-input" onkeyup="filterBookings()" placeholder="ค้นหาด้วย ชื่อ, นามสกุล, กิจกรรมหลัก หรือสถานที่..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium">
+                            <button onclick="clearBookingSearch()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                <i data-lucide="x" class="w-4 h-4 hidden" id="btn-clear-booking-search"></i>
+                            </button>
+                        </div>
+
+                        <div class="sm:col-span-4 bg-slate-50 rounded-xl border border-slate-150 p-2.5 flex items-center justify-around text-center text-xs">
+                            <div>
+                                <p class="text-slate-400 font-medium">ลงทะเบียนทั้งหมด</p>
+                                <p id="booking-stat-total-count" class="text-base font-bold text-slate-700 mt-0.5 font-mono">0</p>
+                            </div>
+                            <div class="w-px h-6 bg-slate-200"></div>
+                            <div>
+                                <p class="text-slate-400 font-medium">ค้นหาเจอ</p>
+                                <p id="booking-stat-showing-count" class="text-base font-bold text-emerald-600 mt-0.5 font-mono">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Filters: Activity / Sub-activity / Hide received -->
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-3 pt-4 border-t border-slate-100">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">กิจกรรม:</span>
+                            <div id="booking-activity-filter-group" class="flex flex-wrap gap-1.5">
+                                <button onclick="setBookingActivityFilter('all')" data-activity-filter="all" class="booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors">ทั้งหมด</button>
+                                <button onclick="setBookingActivityFilter('ธรรมยาตรา')" data-activity-filter="ธรรมยาตรา" class="booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors">ธรรมยาตรา</button>
+                                <button onclick="setBookingActivityFilter('จุดประทีป')" data-activity-filter="จุดประทีป" class="booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors">จุดประทีป</button>
+                                <button onclick="setBookingActivityFilter('ตักบาตร')" data-activity-filter="ตักบาตร" class="booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors">ตักบาตร</button>
+                                <button onclick="setBookingActivityFilter('ทอดผ้าป่า')" data-activity-filter="ทอดผ้าป่า" class="booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors">ทอดผ้าป่า</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">กิจกรรมย่อย:</span>
+                            <select id="booking-subactivity-filter" onchange="filterBookings()" class="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-600 min-w-[10rem]">
+                                <option value="all">ทั้งหมด</option>
+                            </select>
+                        </div>
+
+                        <label class="flex items-center gap-2 cursor-pointer lg:ml-auto">
+                            <input type="checkbox" id="booking-hide-received" onchange="filterBookings()" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30">
+                            <span class="text-xs font-semibold text-slate-600">ซ่อนรายการที่ "รับแล้ว"</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Desktop Bookings Table -->
+                <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="db-bookings-table">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-100 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <th class="py-4 px-5 w-16">#</th>
+                                    <th class="py-4 px-5">ชื่อ-นามสกุล</th>
+                                    <th class="py-4 px-5">เบอร์โทรศัพท์</th>
+                                    <th class="py-4 px-5">กิจกรรมหลัก</th>
+                                    <th class="py-4 px-5">กิจกรรมย่อย (สถานที่)</th>
+                                    <th class="py-4 px-5 w-16 text-center">จำนวน</th>
+                                    <th class="py-4 px-5">สถานะรับบัตร</th>
+                                    <th class="py-4 px-5">เวลาลงทะเบียน</th>
+                                    <th class="py-4 px-5 text-center w-36">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="db-bookings-table-body" class="divide-y divide-slate-100 text-sm text-slate-600">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mobile Bookings Card Container -->
+                <div id="booking-cards-container" class="space-y-3 md:hidden">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Empty bookings view state -->
+                <div id="booking-empty-state" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-12 text-center flex flex-col items-center justify-center space-y-4 hidden">
+                    <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                        <i data-lucide="clipboard-list" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-700 text-base">ไม่พบข้อมูลลงทะเบียนกิจกรรม</h3>
+                        <p class="text-slate-400 text-xs mt-1">ยังไม่มีผู้ลงทะเบียนกิจกรรม หรือคำที่ค้นหาไม่สอดคล้องกับหัวข้อใด</p>
+                    </div>
+                    <button onclick="switchTab('register')" class="inline-flex items-center space-x-1 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                        <i data-lucide="calendar-plus" class="w-3.5 h-3.5"></i>
+                        <span>ไปลงทะเบียนกิจกรรม</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VIEW 4: QR CODE GENERATOR -->
+            <div id="view-generator" class="space-y-6 hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                            <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
+                            <span>สร้าง QR Code ส่วนตัวสำหรับใช้ทดสอบ</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">กรอกข้อมูลส่วนบุคคลเพื่อสร้าง QR Code จากนั้นลองนำไปสแกนด้วยโหมดกล้องถ่ายรูปได้ทันที</p>
+                    </div>
+
+                    <!-- Input form for generation -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="gen-fname" class="block text-xs font-bold text-slate-600 mb-1.5">ชื่อจริง</label>
+                            <input type="text" id="gen-fname" value="ทองดี" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
+                        </div>
+                        <div>
+                            <label for="gen-lname" class="block text-xs font-bold text-slate-600 mb-1.5">นามสกุล</label>
+                            <input type="text" id="gen-lname" value="มีบุญ" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
+                        </div>
+                        <div>
+                            <label for="gen-phone" class="block text-xs font-bold text-slate-600 mb-1.5">เบอร์โทรศัพท์</label>
+                            <input type="tel" id="gen-phone" value="0855551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Advanced formatting options -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2">รูปแบบข้อมูลใน QR Code</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-slate-50" id="fmt-label-json">
+                                <input type="radio" name="gen-format" value="json" checked class="sr-only" onchange="updateFormatSelect('json')">
+                                <span class="text-xs font-bold text-slate-700">JSON</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">(แนะนำสำหรับระบบนี้)</span>
+                            </label>
+                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-white" id="fmt-label-csv">
+                                <input type="radio" name="gen-format" value="csv" class="sr-only" onchange="updateFormatSelect('csv')">
+                                <span class="text-xs font-bold text-slate-700">CSV</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">(ใช้ลูกน้ำคั่น)</span>
+                            </label>
+                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-white" id="fmt-label-text">
+                                <input type="radio" name="gen-format" value="text" class="sr-only" onchange="updateFormatSelect('text')">
+                                <span class="text-xs font-bold text-slate-700">TEXT</span>
+                                <span class="text-[10px] text-slate-400 mt-0.5">(ใช้ขีดคั่น)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Actions & Output Generator QR display box -->
+                    <div class="flex flex-col sm:flex-row items-center gap-6 pt-4 border-t border-slate-100">
+                        <button onclick="generateQRCode()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>สร้าง QR Code</span>
+                        </button>
+
+                        <!-- QR Result box -->
+                        <div id="gen-qr-wrapper" class="hidden flex-grow flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 w-full">
+                            <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-250 aspect-square w-36 h-36 flex items-center justify-center">
+                                <img id="gen-qr-img" src="" alt="Generated QR Code" onerror="handleQrImageError()" class="w-full h-full object-contain">
+                            </div>
+                            <div class="text-center sm:text-left space-y-2 flex-grow">
+                                <h4 class="font-bold text-sm text-slate-700">สร้าง QR Code สำเร็จแล้ว!</h4>
+                                <p class="text-[11px] text-slate-500 leading-relaxed">ข้อมูลที่ฝัง: <br><code id="gen-qr-payload" class="font-mono bg-slate-200 text-slate-600 px-1 py-0.5 rounded text-[10px] break-all block mt-1"></code></p>
+                                <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
+                                    <a id="gen-qr-download" href="#" download="my-qr.png" class="inline-flex items-center space-x-1 bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                        <span>เซฟไฟล์รูปภาพ</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script Logic Block -->
+    <script>
+        let database = []; // scanned contacts database
+        let registrations = []; // bookings database
+        let scanSessions = []; // Scan Time & Activities Sessions list
+        let activeSessionFilter = ""; // Current active lock for scan validation (must select a real scheduled session)
+        let editingSessionId = null; // Session ID being edited currently
+        let editingBookingId = null; // Booking ID being edited currently
+        let editingContactId = null; // Contact ID being edited currently in scanned database
+        let currentBookingActivityFilter = 'all'; // Active activity filter for bookings-list view
+
+        let html5QrScanner = null;
+        let ticketQrScanner = null; // Separate scanner instance for check-in
+        let isScannerRunning = false;
+        let isTicketScannerRunning = false;
+        let selectedFormat = 'json';
+        
+        // Confirmation Modal callback logic variables
+        let pendingConfirmCallback = null;
+
+        // Load data on page launch
+        window.addEventListener('DOMContentLoaded', () => {
+            // Restore Sidebar collapse state preference
+            const savedCollapsed = localStorage.getItem('sidebar_collapsed');
+            if (savedCollapsed === 'true') {
+                const sidebar = document.getElementById('sidebar');
+                const icon = document.getElementById('collapse-icon');
+                sidebar.classList.add('collapsed');
+                if (icon) {
+                    icon.setAttribute('data-lucide', 'chevron-right');
+                }
+            }
+
+            // Retrieve contacts database
+            const savedData = localStorage.getItem('qr_scan_database');
+            if (savedData) {
+                try {
+                    database = JSON.parse(savedData);
+                } catch (e) {
+                    database = [];
+                }
+            }
+
+            // Retrieve registrations database
+            const savedRegData = localStorage.getItem('qr_activity_registrations');
+            if (savedRegData) {
+                try {
+                    registrations = JSON.parse(savedRegData);
+                    // Ensure all records have valid quantities & sub-activity fields
+                    registrations.forEach(r => {
+                        if (!r.ticketStatus) r.ticketStatus = 'pending';
+                        if (!r.quantity) r.quantity = 1;
+                        if (!r.subActivity && r.subcategory) {
+                            r.subActivity = r.subcategory.replace(/^\d+ ม.ค. \d{4} /i, '');
+                        }
+                    });
+                } catch (e) {
+                    registrations = [];
+                }
+            }
+
+            // Retrieve scan sessions database
+            const savedSessions = localStorage.getItem('qr_scan_sessions');
+            if (savedSessions) {
+                try {
+                    scanSessions = JSON.parse(savedSessions);
+                } catch (e) {
+                    scanSessions = [];
+                }
+            } else {
+                loadDefaultSessions();
+            }
+
+            updateDatabaseUI();
+            requestCameraPermissions();
+            updateSessionsUI();
+            
+            // Set standard dates in picker
+            const schDateInput = document.getElementById('sch-date');
+            if (schDateInput) schDateInput.value = "2027-01-03";
+
+            // Set default styling state for first load activity radio
+            updateActivityUI('ธรรมยาตรา');
+
+            // Set default styling state for bookings-list activity filter buttons
+            setBookingActivityFilter('all');
+
+            lucide.createIcons();
+        });
+
+        // Toggle Sidebar collapsed layout for Desktop
+        function toggleCollapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('collapse-icon');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+
+            if (isCollapsed) {
+                sidebar.classList.remove('collapsed');
+                localStorage.setItem('sidebar_collapsed', 'false');
+                if (icon) icon.setAttribute('data-lucide', 'chevron-left');
+            } else {
+                sidebar.classList.add('collapsed');
+                localStorage.setItem('sidebar_collapsed', 'true');
+                if (icon) icon.setAttribute('data-lucide', 'chevron-right');
+            }
+            lucide.createIcons();
+        }
+
+        // Toggle mobile sidebar view drawer
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isHidden = sidebar.classList.contains('-translate-x-full');
+            
+            if (isHidden) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Format raw date picker value into nice Thai Date format
+        function toThaiDate(isoDate) {
+            if (!isoDate) return 'ไม่ได้ระบุ';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            const year = parseInt(parts[0]) + 543;
+            const monthIdx = parseInt(parts[1]) - 1;
+            const day = parseInt(parts[2]);
+            const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return `${day} ${months[monthIdx]} ${year}`;
+        }
+
+        // Load default sessions for quick start
+        function loadDefaultSessions() {
+            scanSessions = [
+                { id: 1, activity: 'ตักบาตร', subActivity: 'โลตัสแลนด์', date: '2027-01-03', startTime: '05:00', endTime: '09:00' },
+                { id: 2, activity: 'ธรรมยาตรา', subActivity: 'อนุสรณ์สถานมหาวิหาร', date: '2027-01-03', startTime: '13:00', endTime: '17:00' },
+                { id: 3, activity: 'จุดประทีป', subActivity: 'วัดสองพี่น้อง', date: '2027-01-03', startTime: '18:00', endTime: '21:00' }
+            ];
+            localStorage.setItem('qr_scan_sessions', JSON.stringify(scanSessions));
+        }
+
+        function resetDefaultSessions() {
+            showCustomConfirm(
+                "รีเซ็ตเวลาสแกนกลับเป็นมาตรฐาน",
+                "คุณต้องการรีเซ็ตเวลากลุ่มรับสิทธิ์ทั้งหมดเป็น ตักบาตร 05:00, ธรรมยาตรา 13:00 และ จุดประทีป 18:00 ใช่หรือไม่?",
+                () => {
+                    loadDefaultSessions();
+                    cancelEditSession(); // clear any edit states
+                    updateSessionsUI();
+                    showNotification("รีเซ็ตตารางเวลาสแกนมาตรฐานสำเร็จ", "success");
+                }
+            );
+        }
+
+        // Handler for Sub-activity option toggle in Scheduler
+        function handleSchSubActivityChange() {
+            const selectVal = document.getElementById('sch-subactivity').value;
+            const customInput = document.getElementById('sch-subactivity-custom');
+            if (selectVal === 'custom') {
+                customInput.classList.remove('hidden');
+                customInput.focus();
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            }
+        }
+
+        // Edit session logic controller
+        function editScanSession(id) {
+            const session = scanSessions.find(s => s.id === id);
+            if (!session) return;
+
+            editingSessionId = id;
+            document.getElementById('sch-form-title').textContent = "แก้ไขกำหนดเวลารับสิทธิ์";
+            document.getElementById('sch-activity').value = session.activity;
+            
+            // Set subactivity fields
+            const subSelect = document.getElementById('sch-subactivity');
+            const customInput = document.getElementById('sch-subactivity-custom');
+            const standardOptions = ['โลตัสแลนด์', 'อนุสรณ์สถานมหาวิหาร', 'วัดสองพี่น้อง', 'วัดโบสถ์บน'];
+            
+            if (standardOptions.includes(session.subActivity)) {
+                subSelect.value = session.subActivity;
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            } else {
+                subSelect.value = 'custom';
+                customInput.classList.remove('hidden');
+                customInput.value = session.subActivity;
+            }
+
+            document.getElementById('sch-date').value = session.date || '';
+            document.getElementById('sch-start').value = session.startTime || '';
+            document.getElementById('sch-end').value = session.endTime || '';
+
+            // Toggle Edit buttons
+            document.getElementById('sch-btn-text').textContent = "บันทึกการแก้ไข";
+            document.getElementById('sch-btn-icon').setAttribute('data-lucide', 'save');
+            document.getElementById('btn-cancel-edit-session').classList.remove('hidden');
+
+            lucide.createIcons();
+            document.getElementById('sch-form-title').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Cancel edit mode
+        function cancelEditSession() {
+            editingSessionId = null;
+            document.getElementById('sch-form-title').textContent = "เพิ่มกำหนดเวลาล่วงหน้า";
+            document.getElementById('sch-activity').value = 'ตักบาตร';
+            document.getElementById('sch-subactivity').value = 'โลตัสแลนด์';
+            document.getElementById('sch-subactivity-custom').classList.add('hidden');
+            document.getElementById('sch-subactivity-custom').value = '';
+            document.getElementById('sch-date').value = '2027-01-03';
+            document.getElementById('sch-start').value = '';
+            document.getElementById('sch-end').value = '';
+
+            document.getElementById('sch-btn-text').textContent = "เพิ่มลงตารางเวลา";
+            document.getElementById('sch-btn-icon').setAttribute('data-lucide', 'plus');
+            document.getElementById('btn-cancel-edit-session').classList.add('hidden');
+            
+            lucide.createIcons();
+        }
+
+        // Save or edit scan session rules
+        function addScanSession() {
+            const activity = document.getElementById('sch-activity').value;
+            const subSelect = document.getElementById('sch-subactivity').value;
+            const date = document.getElementById('sch-date').value;
+            const startTime = document.getElementById('sch-start').value;
+            const endTime = document.getElementById('sch-end').value;
+
+            let subActivity = subSelect;
+            if (subSelect === 'custom') {
+                subActivity = document.getElementById('sch-subactivity-custom').value.trim();
+                if (!subActivity) {
+                    showNotification("กรุณาระบุกิจกรรมย่อย / สถานที่ ด้วยตนเอง", "error");
+                    return;
+                }
+            }
+
+            if (!date || !startTime || !endTime) {
+                showNotification("กรุณาระบุวันที่จัดงาน และช่วงเวลาเริ่ม-สิ้นสุดให้ครบถ้วน", "error");
+                return;
+            }
+
+            if (editingSessionId !== null) {
+                // Update existing record
+                const idx = scanSessions.findIndex(s => s.id === editingSessionId);
+                if (idx !== -1) {
+                    scanSessions[idx] = {
+                        ...scanSessions[idx],
+                        activity: activity,
+                        subActivity: subActivity,
+                        date: date,
+                        startTime: startTime,
+                        endTime: endTime
+                    };
+                    showNotification("ปรับปรุงรอบตารางเวลาสำเร็จ!", "success");
+                }
+                cancelEditSession();
+            } else {
+                // Create new record
+                const newSession = {
+                    id: Date.now(),
+                    activity: activity,
+                    subActivity: subActivity,
+                    date: date,
+                    startTime: startTime,
+                    endTime: endTime
+                };
+                scanSessions.push(newSession);
+                showNotification("เพิ่มเวลาจัดเตรียมรับบัตรสำเร็จ!", "success");
+            }
+
+            localStorage.setItem('qr_scan_sessions', JSON.stringify(scanSessions));
+            updateSessionsUI();
+            
+            // Reset input values
+            document.getElementById('sch-subactivity-custom').value = '';
+            document.getElementById('sch-subactivity-custom').classList.add('hidden');
+            document.getElementById('sch-subactivity').value = 'โลตัสแลนด์';
+            document.getElementById('sch-start').value = '';
+            document.getElementById('sch-end').value = '';
+        }
+
+        // Delete scan session rule
+        function deleteScanSession(id) {
+            if (editingSessionId === id) {
+                cancelEditSession();
+            }
+            scanSessions = scanSessions.filter(s => s.id !== id);
+            localStorage.setItem('qr_scan_sessions', JSON.stringify(scanSessions));
+            updateSessionsUI();
+            showNotification("ลบรายการกำหนดรอบสแกนสำเร็จ", "info");
+        }
+
+        // Render sessions configuration tab and synch selection list in check-in tab
+        function updateSessionsUI() {
+            document.getElementById('badge-sessions-count').textContent = scanSessions.length;
+            
+            const listContainer = document.getElementById('sessions-list-container');
+            const selectFilter = document.getElementById('active-session-select');
+
+            // Save old value to restore
+            const oldSelected = selectFilter.value;
+
+            listContainer.innerHTML = '';
+
+            if (scanSessions.length === 0) {
+                selectFilter.innerHTML = '<option value="">-- ยังไม่มีตารางเวลาสแกน กรุณาเพิ่มก่อน --</option>';
+            } else {
+                selectFilter.innerHTML = '';
+            }
+
+            if (scanSessions.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="p-6 text-center text-xs text-slate-400">
+                        ยังไม่มีตารางเวลาสแกนล่วงหน้าในระบบ กรุณาเพิ่มตารางเวลาก่อนจึงจะสามารถรับบัตรได้
+                    </div>`;
+            } else {
+                scanSessions.forEach((session, index) => {
+                    // Populate scheduler list
+                    const div = document.createElement('div');
+                    div.className = "p-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-all";
+                    div.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-slate-800 px-2 py-0.5 rounded-full bg-slate-100">${index+1}</span>
+                                <span class="font-bold text-slate-900 text-sm">${escapeHTML(session.activity)} - ${escapeHTML(session.subActivity)}</span>
+                                <span class="text-xs text-indigo-600 font-semibold">(${toThaiDate(session.date)})</span>
+                            </div>
+                            <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                <span>เวลาเปิดรับสแกน: <strong class="text-slate-700">${session.startTime} - ${session.endTime} น.</strong></span>
+                            </p>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="editScanSession(${session.id})" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors" title="แก้ไข">
+                                <i data-lucide="edit" class="w-4.5 h-4.5"></i>
+                            </button>
+                            <button onclick="deleteScanSession(${session.id})" class="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="ลบกำหนดการ">
+                                <i data-lucide="trash-2" class="w-4.5 h-4.5"></i>
+                            </button>
+                        </div>
+                    `;
+                    listContainer.appendChild(div);
+
+                    // Populate check-in filter select options
+                    const opt = document.createElement('option');
+                    opt.value = session.id;
+                    opt.textContent = `[ ${session.activity} - ${session.subActivity} ] วันที่ ${toThaiDate(session.date)} (${session.startTime} - ${session.endTime} น.)`;
+                    selectFilter.appendChild(opt);
+                });
+            }
+
+            // Restore selector state if possible; otherwise auto-select the first configured session
+            if ([...selectFilter.options].some(o => o.value === oldSelected) && oldSelected) {
+                selectFilter.value = oldSelected;
+            } else if (scanSessions.length > 0) {
+                selectFilter.value = String(scanSessions[0].id);
+            }
+
+            applyActiveSessionFilter();
+            lucide.createIcons();
+        }
+
+        // Apply scan lock variables
+        function applyActiveSessionFilter() {
+            const selectVal = document.getElementById('active-session-select').value;
+            activeSessionFilter = selectVal;
+
+            const badge = document.getElementById('session-status-badge');
+            const summary = document.getElementById('active-session-summary');
+
+            if (!selectVal) {
+                badge.className = "inline-flex py-1 px-3 rounded-full text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30";
+                badge.textContent = "ยังไม่มีตารางเวลาสแกน";
+                summary.textContent = "กรุณาเพิ่มตารางเวลาสแกนในเมนู \"ตารางเวลาสแกน\" ก่อน จึงจะสามารถรับบัตรได้";
+            } else {
+                const activeId = parseInt(selectVal);
+                const session = scanSessions.find(s => s.id === activeId);
+                if (session) {
+                    badge.className = "inline-flex py-1 px-3 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30";
+                    badge.textContent = `จำกัด: ${session.activity} (${session.subActivity})`;
+                    summary.innerHTML = `สแกนสิทธิ์ตรงกับ <strong class="text-emerald-400">"${session.activity}" - "${session.subActivity}"</strong> วันที่ <strong class="text-indigo-300">"${toThaiDate(session.date)}"</strong> เวลา <strong class="text-indigo-300">${session.startTime}-${session.endTime} น.</strong> เท่านั้น`;
+                }
+            }
+
+            updateTicketTabUI();
+        }
+
+        // Toggle Format styling on Radio controls in QR generator
+        function updateFormatSelect(format) {
+            selectedFormat = format;
+            ['json', 'csv', 'text'].forEach(fmt => {
+                const label = document.getElementById(`fmt-label-${fmt}`);
+                const radio = label.querySelector('input');
+                if (fmt === format) {
+                    label.classList.add('border-emerald-500', 'bg-emerald-50');
+                    label.classList.remove('border-slate-200', 'bg-white');
+                    radio.checked = true;
+                } else {
+                    label.classList.remove('border-emerald-500', 'bg-emerald-50');
+                    label.classList.add('border-slate-200', 'bg-white');
+                    radio.checked = false;
+                }
+            });
+        }
+
+        // Custom Modal Confirm Logic instead of standard alert/confirm
+        function showCustomConfirm(title, description, onAgree) {
+            const modal = document.getElementById('confirm-modal');
+            const innerModal = modal.querySelector('.transform');
+            
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-description').textContent = description;
+            
+            pendingConfirmCallback = onAgree;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                innerModal.classList.remove('scale-95');
+                innerModal.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeCustomConfirm() {
+            const modal = document.getElementById('confirm-modal');
+            const innerModal = modal.querySelector('.transform');
+            
+            modal.classList.add('opacity-0');
+            innerModal.classList.add('scale-95');
+            innerModal.classList.remove('scale-100');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                pendingConfirmCallback = null;
+            }, 300);
+        }
+
+        document.getElementById('btn-confirm-cancel').addEventListener('click', closeCustomConfirm);
+        document.getElementById('btn-confirm-agree').addEventListener('click', () => {
+            if (pendingConfirmCallback) {
+                pendingConfirmCallback();
+            }
+            closeCustomConfirm();
+        });
+
+        // Tab Switching Engine with Sidebar support
+        function switchTab(tabId) {
+            // Stop scanning if camera is active and user changes tab
+            if (tabId !== 'scan' && isScannerRunning) {
+                stopScanner();
+            }
+            if (tabId !== 'ticket' && isTicketScannerRunning) {
+                stopTicketScanner();
+            }
+
+            // Hide all tabs
+            const allTabs = ['scan', 'register', 'scheduler', 'ticket', 'database', 'bookings-list', 'generator'];
+            allTabs.forEach(id => {
+                const el = document.getElementById(`view-${id}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            // Show selected tab
+            const targetTab = document.getElementById(`view-${tabId}`);
+            if (targetTab) targetTab.classList.remove('hidden');
+
+            // Close mobile drawer when clicking menu items
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (!sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+
+            // Toggle top tab styling
+            allTabs.forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                if (btn) {
+                    if (id === tabId) {
+                        btn.className = "w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 bg-emerald-600 text-white shadow-md shadow-emerald-500/10";
+                    } else {
+                        btn.className = "w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50";
+                    }
+                }
+            });
+
+            // Specific layouts rendering adjustments
+            if (tabId === 'database') {
+                filterData();
+            } else if (tabId === 'bookings-list') {
+                filterBookings();
+            } else if (tabId === 'ticket') {
+                updateTicketTabUI();
+            } else if (tabId === 'scheduler') {
+                updateSessionsUI();
+            }
+        }
+
+        // Custom notification toaster UI
+        function showNotification(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const iconWrapper = document.getElementById('toast-icon-wrapper');
+            const icon = document.getElementById('toast-icon');
+
+            msgEl.textContent = message;
+
+            if (type === 'success') {
+                iconWrapper.className = "p-1 rounded-lg bg-emerald-500 text-white";
+                icon.setAttribute('data-lucide', 'check');
+            } else if (type === 'error') {
+                iconWrapper.className = "p-1 rounded-lg bg-red-500 text-white";
+                icon.setAttribute('data-lucide', 'alert-circle');
+            } else {
+                iconWrapper.className = "p-1 rounded-lg bg-indigo-500 text-white";
+                icon.setAttribute('data-lucide', 'info');
+            }
+
+            lucide.createIcons();
+
+            // Toggle active animation positioning classes
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Synthesizing feedback beep on scan success
+        function playSuccessSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = 1000; // Tone frequency pitch
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.15);
+            } catch (e) {
+                console.log("Audio contexts couldn't initialize", e);
+            }
+        }
+
+        // Camera Devices Inquiry
+        function requestCameraPermissions() {
+            Html5Qrcode.getCameras().then(devices => {
+                const select = document.getElementById('camera-select');
+                select.innerHTML = '';
+                
+                if (devices && devices.length > 0) {
+                    devices.forEach((device, index) => {
+                        const opt = document.createElement('option');
+                        opt.value = device.id;
+                        opt.text = device.label || `กล้องถ่ายรูป #${index + 1}`;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = "";
+                    opt.text = "ไม่พบกล้องเชื่อมต่ออยู่";
+                    select.appendChild(opt);
+                }
+            }).catch(err => {
+                const select = document.getElementById('camera-select');
+                select.innerHTML = '<option value="">ไม่อนุญาตให้ใช้งานกล้อง</option>';
+            });
+        }
+
+        // Turn ON QR Camera scanning
+        function startScanner() {
+            const cameraId = document.getElementById('camera-select').value;
+            if (!cameraId) {
+                showNotification("กรุณาเลือกอุปกรณ์กล้อง หรือตรวจดูสิทธิ์ใช้งานของเบราว์เซอร์", "error");
+                return;
+            }
+
+            document.getElementById('scanner-placeholder').classList.add('hidden');
+            document.getElementById('scanner-laser').classList.remove('hidden');
+
+            html5QrScanner = new Html5Qrcode("reader");
+            
+            // Scanner configuration parameter details
+            const config = {
+                fps: 10,
+                qrbox: (width, height) => {
+                    const size = Math.min(width, height) * 0.75;
+                    return { width: size, height: size };
+                }
+            };
+
+            html5QrScanner.start(
+                cameraId, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                isScannerRunning = true;
+                document.getElementById('btn-start-camera').disabled = true;
+                document.getElementById('btn-start-camera').className = "flex-1 inline-flex items-center justify-center space-x-2 bg-slate-100 text-slate-400 font-medium py-3 px-4 rounded-xl cursor-not-allowed";
+                
+                const stopBtn = document.getElementById('btn-stop-camera');
+                stopBtn.disabled = false;
+                stopBtn.className = "flex-1 inline-flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-colors duration-200";
+            }).catch(err => {
+                showNotification("ไม่สามารถเชื่อมต่อวิดีโอกล้องได้: " + err, "error");
+                document.getElementById('scanner-placeholder').classList.remove('hidden');
+                document.getElementById('scanner-laser').classList.add('hidden');
+            });
+        }
+
+        // Stop Camera feed scanner
+        function stopScanner() {
+            if (html5QrScanner && isScannerRunning) {
+                html5QrScanner.stop().then(() => {
+                    isScannerRunning = false;
+                    document.getElementById('scanner-placeholder').classList.remove('hidden');
+                    document.getElementById('scanner-laser').classList.add('hidden');
+
+                    const startBtn = document.getElementById('btn-start-camera');
+                    startBtn.disabled = false;
+                    startBtn.className = "flex-1 inline-flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-colors duration-200";
+
+                    const stopBtn = document.getElementById('btn-stop-camera');
+                    stopBtn.disabled = true;
+                    stopBtn.className = "flex-1 inline-flex items-center justify-center space-x-2 bg-slate-100 text-slate-400 font-medium py-3 px-4 rounded-xl cursor-not-allowed";
+                }).catch(err => {
+                    console.error("Failed to stop scanner gracefully: ", err);
+                });
+            }
+        }
+
+        function onScanFailure(error) {
+            // Fine-grained tracking details ignored to avoid flood console logs
+        }
+
+        // Scan Success handler
+        function onScanSuccess(decodedText, decodedResult) {
+            playSuccessSound();
+            stopScanner();
+            parseAndPopulateData(decodedText);
+        }
+
+        // Scan fallback using physical upload of static photo files
+        function scanFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const scanEngine = new Html5Qrcode("reader");
+            scanEngine.scanFile(file, true)
+                .then(decodedText => {
+                    playSuccessSound();
+                    parseAndPopulateData(decodedText);
+                })
+                .catch(err => {
+                    showNotification("ไม่พบ QR Code ในไฟล์รูปภาพนี้ กรุณาเปลี่ยนภาพใหม่", "error");
+                });
+        }
+
+        // Process manually typed-in numeric QR Code data (fallback when camera/image scan isn't possible)
+        function processManualQrInput() {
+            const input = document.getElementById('manual-qr-input');
+            const value = input.value.trim();
+
+            if (!value) {
+                showNotification("กรุณาป้อนข้อมูลตัวเลข QR Code ก่อนดำเนินการ", "error");
+                return;
+            }
+
+            parseAndPopulateData(value);
+            input.value = '';
+        }
+
+        // Smart Data Parser Engine
+        function parseAndPopulateData(text) {
+            let fname = "";
+            let lname = "";
+            let phone = "";
+
+            const cleanedText = text.trim();
+
+            // Try JSON parser format
+            if (cleanedText.startsWith('{') && cleanedText.endsWith('}')) {
+                try {
+                    const obj = JSON.parse(cleanedText);
+                    fname = obj.fname || obj.firstName || obj.name || obj.ชื่อ || "";
+                    lname = obj.lname || obj.lastName || obj.surname || obj.นามสกุล || "";
+                    phone = obj.phone || obj.tel || obj.phoneNo || obj.เบอร์โทร || "";
+                    
+                    if (!fname && (obj.name || obj.fullName || obj.ชื่อจริง)) {
+                        const full = obj.name || obj.fullName || obj.ชื่อจริง;
+                        const parts = full.split(' ');
+                        fname = parts[0] || "";
+                        lname = parts.slice(1).join(' ') || "";
+                    }
+                } catch (e) {
+                    console.log("Unsuccessful JSON decoding attempt");
+                }
+            }
+
+            // Comma layout
+            if (!fname && cleanedText.includes(',')) {
+                const parts = cleanedText.split(',');
+                if (parts.length >= 3) {
+                    fname = parts[0].trim();
+                    lname = parts[1].trim();
+                    phone = parts[2].trim();
+                } else if (parts.length === 2) {
+                    fname = parts[0].trim();
+                    phone = parts[1].trim();
+                }
+            }
+
+            // Custom pipe format
+            if (!fname && cleanedText.includes('|')) {
+                const parts = cleanedText.split('|');
+                if (parts.length >= 3) {
+                    fname = parts[0].trim();
+                    lname = parts[1].trim();
+                    phone = parts[2].trim();
+                } else if (parts.length === 2) {
+                    fname = parts[0].trim();
+                    phone = parts[1].trim();
+                }
+            }
+
+            // vCard format
+            if (!fname && cleanedText.toUpperCase().includes('BEGIN:VCARD')) {
+                const fnMatch = cleanedText.match(/FN:(.*)/i);
+                const telMatch = cleanedText.match(/TEL.*:(.*)/i);
+                
+                if (fnMatch) {
+                    const nameParts = fnMatch[1].trim().split(' ');
+                    fname = nameParts[0] || "";
+                    lname = nameParts.slice(1).join(' ') || "";
+                }
+                if (telMatch) {
+                    phone = telMatch[1].trim().replace(/[- ]/g, '');
+                }
+            }
+
+            document.getElementById('res-fname').value = fname;
+            document.getElementById('res-lname').value = lname;
+            document.getElementById('res-phone').value = phone;
+            document.getElementById('res-qr-raw').value = text;
+
+            const resultBox = document.getElementById('result-container');
+            resultBox.classList.remove('hidden');
+            resultBox.scrollIntoView({ behavior: 'smooth' });
+            
+            showNotification("สแกนข้อมูลสำเร็จเรียบร้อย!", "success");
+        }
+
+        // Clean values form inputs
+        function resetResultForm() {
+            document.getElementById('res-fname').value = "";
+            document.getElementById('res-lname').value = "";
+            document.getElementById('res-phone').value = "";
+            document.getElementById('res-qr-raw').value = "";
+            document.getElementById('result-container').classList.add('hidden');
+        }
+
+        // Send directly from Scan output to registration tab
+        function sendToRegistrationDirect() {
+            const fname = document.getElementById('res-fname').value.trim();
+            const lname = document.getElementById('res-lname').value.trim();
+            const phone = document.getElementById('res-phone').value.trim();
+
+            if (!fname || !lname) {
+                showNotification("กรุณากรอกข้อมูลขั้นต่ำ (ชื่อจริง และ นามสกุล) ก่อนย้ายไปลงทะเบียน", "error");
+                return;
+            }
+
+            // Switch to Registration Tab
+            switchTab('register');
+
+            // Fill inputs
+            document.getElementById('reg-fname').value = fname;
+            document.getElementById('reg-lname').value = lname;
+            document.getElementById('reg-phone').value = phone;
+            
+            // Clean scan outcome
+            resetResultForm();
+            
+            showNotification("ส่งรายชื่อเพื่อจองกิจกรรมสำเร็จ", "info");
+        }
+
+        // Insert record data block
+        function saveScannedData() {
+            const fname = document.getElementById('res-fname').value.trim();
+            const lname = document.getElementById('res-lname').value.trim();
+            const phone = document.getElementById('res-phone').value.trim();
+            const qrRaw = document.getElementById('res-qr-raw').value;
+
+            if (!fname || !lname || !phone) {
+                showNotification("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อ, นามสกุล และเบอร์โทรศัพท์)", "error");
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                fname: fname,
+                lname: lname,
+                phone: phone,
+                qrRaw: qrRaw || "กรอกข้อมูลโดยเจ้าหน้าที่",
+                timestamp: new Date().toLocaleString('th-TH')
+            };
+
+            database.unshift(record);
+            localStorage.setItem('qr_scan_database', JSON.stringify(database));
+
+            updateDatabaseUI();
+            resetResultForm();
+            showNotification("บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+        }
+
+        // Search Contact Autocomplete for Registration Input
+        function searchContactForRegister() {
+            const query = document.getElementById('reg-search').value.toLowerCase().trim();
+            const resultsBox = document.getElementById('reg-search-results');
+            const btnClear = document.getElementById('btn-clear-reg-search');
+
+            if (query.length > 0) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+                resultsBox.classList.add('hidden');
+                return;
+            }
+
+            // Filter scanned contacts list
+            const matched = database.filter(item => {
+                return (
+                    item.fname.toLowerCase().includes(query) ||
+                    item.lname.toLowerCase().includes(query) ||
+                    item.phone.toLowerCase().includes(query)
+                );
+            });
+
+            resultsBox.innerHTML = '';
+
+            if (matched.length === 0) {
+                const noResultDiv = document.createElement('div');
+                noResultDiv.className = "p-4 text-xs text-slate-400 text-center";
+                noResultDiv.textContent = "ไม่พบรายชื่อในระบบ (หากไม่มี สามารถป้อนใหม่ที่ฟอร์มด้านล่าง)";
+                resultsBox.appendChild(noResultDiv);
+            } else {
+                matched.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center transition-colors";
+                    row.innerHTML = `
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</p>
+                            <p class="text-xs text-slate-400 font-mono">${escapeHTML(item.phone)}</p>
+                        </div>
+                        <span class="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">ดึงข้อมูล</span>
+                    `;
+                    row.onclick = () => selectContactForRegister(item);
+                    resultsBox.appendChild(row);
+                });
+            }
+
+            resultsBox.classList.remove('hidden');
+        }
+
+        // Clear AutoComplete Search state
+        function clearRegSearch() {
+            document.getElementById('reg-search').value = '';
+            document.getElementById('btn-clear-reg-search').classList.add('hidden');
+            document.getElementById('reg-search-results').classList.add('hidden');
+        }
+
+        // Select and Autofill values from Autocomplete click
+        function selectContactForRegister(contact) {
+            document.getElementById('reg-fname').value = contact.fname;
+            document.getElementById('reg-lname').value = contact.lname;
+            document.getElementById('reg-phone').value = contact.phone;
+
+            clearRegSearch();
+            showNotification(`ดึงข้อมูลคุณ ${contact.fname} แล้ว`, "success");
+        }
+
+        // Manage Custom Styling of Selected Activity Radio
+        function updateActivityUI(chosenValue) {
+            const activities = [
+                { val: 'ธรรมยาตรา', id: 'lbl-act-dharma', activeCls: 'border-amber-500', bgCls: 'bg-amber-50/20' },
+                { val: 'จุดประทีป', id: 'lbl-act-light', activeCls: 'border-orange-500', bgCls: 'bg-orange-50/20' },
+                { val: 'ตักบาตร', id: 'lbl-act-alms', activeCls: 'border-emerald-500', bgCls: 'bg-emerald-50/20' },
+                { val: 'ทอดผ้าป่า', id: 'lbl-act-forest', activeCls: 'border-sky-500', bgCls: 'bg-sky-50/20' }
+            ];
+
+            activities.forEach(item => {
+                const label = document.getElementById(item.id);
+                if (!label) return;
+
+                if (item.val === chosenValue) {
+                    label.classList.add(item.activeCls, item.bgCls);
+                    label.classList.remove('border-slate-200');
+                    label.querySelector('input').checked = true;
+                } else {
+                    label.classList.remove(item.activeCls, item.bgCls);
+                    label.classList.add('border-slate-200');
+                }
+            });
+        }
+
+        // Subactivity select logic toggle custom text input in Registration
+        function handleRegSubActivityChange() {
+            const selectVal = document.getElementById('reg-subactivity-select').value;
+            const wrapper = document.getElementById('custom-subactivity-wrapper');
+            
+            if (selectVal === 'custom') {
+                wrapper.classList.remove('hidden');
+                document.getElementById('reg-subactivity-custom').focus();
+            } else {
+                wrapper.classList.add('hidden');
+            }
+        }
+
+        // Edit Booking details controller
+        function editBooking(id) {
+            const booking = registrations.find(r => r.id === id);
+            if (!booking) return;
+
+            editingBookingId = id;
+            document.getElementById('register-header-title').textContent = "แก้ไขข้อมูลการลงทะเบียนกิจกรรม";
+            document.getElementById('reg-fname').value = booking.fname;
+            document.getElementById('reg-lname').value = booking.lname;
+            document.getElementById('reg-phone').value = booking.phone;
+            document.getElementById('reg-quantity').value = booking.quantity || 1;
+
+            updateActivityUI(booking.activity);
+
+            const subSelect = document.getElementById('reg-subactivity-select');
+            const customInput = document.getElementById('reg-subactivity-custom');
+            const standardOptions = ['โลตัสแลนด์', 'อนุสรณ์สถานมหาวิหาร', 'วัดสองพี่น้อง', 'วัดโบสถ์บน'];
+
+            if (standardOptions.includes(booking.subActivity)) {
+                subSelect.value = booking.subActivity;
+                customInput.value = '';
+                document.getElementById('custom-subactivity-wrapper').classList.add('hidden');
+            } else {
+                subSelect.value = 'custom';
+                customInput.value = booking.subActivity;
+                document.getElementById('custom-subactivity-wrapper').classList.remove('hidden');
+            }
+
+            // Adjust button labels
+            document.getElementById('reg-btn-text').textContent = "บันทึกการแก้ไขกิจกรรม";
+            document.getElementById('btn-cancel-edit-booking').classList.remove('hidden');
+
+            switchTab('register');
+            document.getElementById('view-register').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Cancel editing state
+        function cancelEditBooking() {
+            editingBookingId = null;
+            document.getElementById('register-header-title').textContent = "ลงทะเบียนเข้าร่วมกิจกรรม";
+            document.getElementById('reg-btn-text').textContent = "บันทึกกิจกรรมที่จอง";
+            document.getElementById('btn-cancel-edit-booking').classList.add('hidden');
+            clearRegForm();
+        }
+
+        // Reset register forms inputs
+        function clearRegForm() {
+            document.getElementById('reg-search').value = '';
+            document.getElementById('reg-fname').value = '';
+            document.getElementById('reg-lname').value = '';
+            document.getElementById('reg-phone').value = '';
+            document.getElementById('reg-quantity').value = '1';
+            
+            // reset radio defaults
+            updateActivityUI('ธรรมยาตรา');
+            
+            document.getElementById('reg-subactivity-select').value = 'โลตัสแลนด์';
+            document.getElementById('custom-subactivity-wrapper').classList.add('hidden');
+            document.getElementById('reg-subactivity-custom').value = '';
+            
+            clearRegSearch();
+        }
+
+        // Save or update Registration Information block
+        function saveRegistrationData() {
+            const fname = document.getElementById('reg-fname').value.trim();
+            const lname = document.getElementById('reg-lname').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const quantity = parseInt(document.getElementById('reg-quantity').value) || 1;
+            
+            // get checked activity
+            const activityEl = document.querySelector('input[name="reg-activity"]:checked');
+            const activity = activityEl ? activityEl.value : "ธรรมยาตรา";
+
+            // subcategory logic check
+            const subSelect = document.getElementById('reg-subactivity-select').value;
+            let subActivity = subSelect;
+            if (subSelect === 'custom') {
+                subActivity = document.getElementById('reg-subactivity-custom').value.trim();
+                if (!subActivity) {
+                    showNotification("กรุณาระบุกิจกรรมย่อย / สถานที่ เอง", "error");
+                    return;
+                }
+            }
+
+            if (quantity < 1) {
+                showNotification("จำนวนผู้รับบัตรต้องมากกว่า 0 ใบ", "error");
+                return;
+            }
+
+            // check required fields validation
+            if (!fname || !lname || !phone) {
+                showNotification("กรุณากรอกข้อมูลส่วนตัว (ชื่อ นามสกุล และเบอร์โทร) เพื่อลงทะเบียน", "error");
+                return;
+            }
+
+            // Auto-detect Date from Preconfigured Scheduler for safety matching
+            let matchedSession = scanSessions.find(s => s.activity === activity && s.subActivity === subActivity);
+            const date = matchedSession ? matchedSession.date : "2027-01-03";
+
+            if (editingBookingId !== null) {
+                // Update booking
+                const idx = registrations.findIndex(r => r.id === editingBookingId);
+                if (idx !== -1) {
+                    registrations[idx] = {
+                        ...registrations[idx],
+                        fname: fname,
+                        lname: lname,
+                        phone: phone,
+                        activity: activity,
+                        subActivity: subActivity,
+                        date: date,
+                        quantity: quantity
+                    };
+                    showNotification("แก้ไขข้อมูลการลงทะเบียนกิจกรรมสำเร็จ!", "success");
+                }
+                cancelEditBooking();
+            } else {
+                // Create new booking record
+                const record = {
+                    id: Date.now(),
+                    fname: fname,
+                    lname: lname,
+                    phone: phone,
+                    activity: activity,
+                    subActivity: subActivity,
+                    date: date, // Bound automatically
+                    quantity: quantity,
+                    ticketStatus: 'pending', // Default status
+                    timestamp: new Date().toLocaleString('th-TH')
+                };
+
+                registrations.unshift(record);
+                showNotification(`ลงทะเบียน ${activity} (${subActivity}) จำนวน ${quantity} ใบ สำเร็จ!`, "success");
+            }
+
+            localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
+
+            // Also check if this contact is in scanned list
+            const alreadyExists = database.some(item => 
+                item.fname.toLowerCase() === fname.toLowerCase() && 
+                item.lname.toLowerCase() === lname.toLowerCase()
+            );
+
+            if (!alreadyExists) {
+                const autoContact = {
+                    id: Date.now() + 1,
+                    fname: fname,
+                    lname: lname,
+                    phone: phone,
+                    qrRaw: "ลงทะเบียนอัตโนมัติจากหน้ากิจกรรม",
+                    timestamp: new Date().toLocaleString('th-TH')
+                };
+                database.unshift(autoContact);
+                localStorage.setItem('qr_scan_database', JSON.stringify(database));
+            }
+
+            updateDatabaseUI();
+            clearRegForm();
+
+            // Redirect automatically to registered list
+            switchTab('bookings-list');
+        }
+
+        // Refresh counts on the badge indicators
+        function updateDatabaseUI() {
+            document.getElementById('badge-count').textContent = database.length;
+            document.getElementById('badge-bookings-count').textContent = registrations.length;
+
+            filterData();
+            populateBookingSubActivityFilter();
+            filterBookings();
+            updateTicketTabUI(); // keep stats synched
+        }
+
+        // Get registrations that exactly match the selected active session (Activity & Sub-activity)
+        function getFilteredRegistrationsForActiveSession() {
+            if (!activeSessionFilter) return [];
+
+            const activeId = parseInt(activeSessionFilter);
+            const session = scanSessions.find(s => s.id === activeId);
+            if (!session) return [];
+
+            return registrations.filter(r => {
+                const rActivity = r.activity;
+                const rSubActivity = r.subActivity || r.subcategory || '';
+
+                const activityMatch = rActivity === session.activity;
+                const subActivityMatch = rSubActivity.includes(session.subActivity);
+
+                return activityMatch && subActivityMatch;
+            });
+        }
+
+        // Find the scheduled session (real date/time) matching a registration's activity & sub-activity.
+        // The date/place chosen during registration is only a placeholder assumption, so the actual
+        // date and time shown here always comes from the scheduler ("ตารางเวลาสแกน") configuration.
+        function findSessionForRegistration(item) {
+            const rSubActivity = item.subActivity || item.subcategory || '';
+            return scanSessions.find(s =>
+                s.activity === item.activity &&
+                rSubActivity.includes(s.subActivity)
+            ) || null;
+        }
+
+        // Format the scheduled date & time for a registration, sourced purely from the scheduler
+        // ("ตารางเวลาสแกน") configuration matching its activity & sub-activity.
+        function formatSessionDateTime(item) {
+            const matchedSession = findSessionForRegistration(item);
+            if (matchedSession && matchedSession.startTime && matchedSession.endTime) {
+                return `${toThaiDate(matchedSession.date)} เวลา ${matchedSession.startTime}-${matchedSession.endTime} น.`;
+            }
+            return 'ยังไม่มีกำหนดตารางเวลา';
+        }
+
+        // Update Ticket UI Stats & searchable lists
+        function updateTicketTabUI() {
+            const activeFilteredList = getFilteredRegistrationsForActiveSession();
+            
+            // Total Bookings Slots
+            const totalQueues = activeFilteredList.length;
+            const totalTicketsSum = activeFilteredList.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+
+            // Received
+            const receivedList = activeFilteredList.filter(r => r.ticketStatus === 'received');
+            const receivedQueues = receivedList.length;
+            const receivedTicketsSum = receivedList.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+
+            // Pending
+            const pendingList = activeFilteredList.filter(r => r.ticketStatus !== 'received');
+            const pendingQueues = pendingList.length;
+            const pendingTicketsSum = pendingList.reduce((sum, item) => sum + (parseInt(item.quantity) || 1), 0);
+
+            // Injection of Stats with quantity sums
+            document.getElementById('ticket-stat-total').innerHTML = `${totalTicketsSum} ใบ <span class="text-xs text-slate-400 font-normal">(${totalQueues} คิว)</span>`;
+            document.getElementById('ticket-stat-pending').innerHTML = `${pendingTicketsSum} ใบ <span class="text-xs text-amber-500 font-normal">(${pendingQueues} คิว)</span>`;
+            document.getElementById('ticket-stat-received').innerHTML = `${receivedTicketsSum} ใบ <span class="text-xs text-emerald-500 font-normal">(${receivedQueues} คิว)</span>`;
+
+            searchTicketList();
+        }
+
+        // Manage Ticket scanning camera
+        function startTicketScanner() {
+            const cameraId = document.getElementById('camera-select').value;
+            if (!cameraId) {
+                showNotification("กรุณาเลือกกล้องในหน้าสแกนหลักก่อนเปิดใช้งานระบบรับบัตร", "error");
+                return;
+            }
+
+            document.getElementById('ticket-scanner-placeholder').classList.add('hidden');
+            document.getElementById('ticket-scanner-laser').classList.remove('hidden');
+
+            ticketQrScanner = new Html5Qrcode("ticket-reader");
+            const config = {
+                fps: 10,
+                qrbox: (width, height) => {
+                    const size = Math.min(width, height) * 0.75;
+                    return { width: size, height: size };
+                }
+            };
+
+            ticketQrScanner.start(
+                cameraId,
+                config,
+                onTicketScanSuccess,
+                onScanFailure
+            ).then(() => {
+                isTicketScannerRunning = true;
+                document.getElementById('btn-ticket-start').disabled = true;
+                document.getElementById('btn-ticket-start').className = "flex-1 py-2 px-3 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed";
+                
+                const stopBtn = document.getElementById('btn-ticket-stop');
+                stopBtn.disabled = false;
+                stopBtn.className = "flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors duration-200";
+            }).catch(err => {
+                showNotification("เชื่อมต่อวิดีโอกล้องล้มเหลว: " + err, "error");
+                document.getElementById('ticket-scanner-placeholder').classList.remove('hidden');
+                document.getElementById('ticket-scanner-laser').classList.add('hidden');
+            });
+        }
+
+        function stopTicketScanner() {
+            if (ticketQrScanner && isTicketScannerRunning) {
+                ticketQrScanner.stop().then(() => {
+                    isTicketScannerRunning = false;
+                    document.getElementById('ticket-scanner-placeholder').classList.remove('hidden');
+                    document.getElementById('ticket-scanner-laser').classList.add('hidden');
+
+                    const startBtn = document.getElementById('btn-ticket-start');
+                    startBtn.disabled = false;
+                    startBtn.className = "flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm flex items-center justify-center space-x-1";
+
+                    const stopBtn = document.getElementById('btn-ticket-stop');
+                    stopBtn.disabled = true;
+                    stopBtn.className = "flex-1 py-2 px-3 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 cursor-not-allowed";
+                }).catch(err => {
+                    console.error("Error stopping ticket scanner: ", err);
+                });
+            }
+        }
+
+        // Validate booking ticket registration against Active scan sessions rule
+        function validateScanWithActiveSession(booking) {
+            if (!activeSessionFilter) {
+                return { valid: false, reason: "ยังไม่ได้เลือกตารางเวลาสแกนที่ใช้งาน กรุณาเลือกรอบก่อนรับบัตร" };
+            }
+
+            const activeId = parseInt(activeSessionFilter);
+            const sessionRule = scanSessions.find(s => s.id === activeId);
+
+            if (!sessionRule) {
+                return { valid: false, reason: "ไม่พบตารางเวลาสแกนที่เลือกไว้ในระบบ" };
+            }
+
+            const rActivity = booking.activity;
+            const rSubActivity = booking.subActivity || booking.subcategory || '';
+
+            const activityMatches = rActivity === sessionRule.activity;
+            const subMatches = rSubActivity.includes(sessionRule.subActivity);
+
+            if (activityMatches && subMatches) {
+                return { valid: true };
+            }
+
+            let reason = "";
+            if (!activityMatches) {
+                reason = `รอบสแกนเป็นของ "${sessionRule.activity}" แต่ผู้ใช้จองรอบกิจกรรม "${rActivity}"`;
+            } else if (!subMatches) {
+                reason = `กิจกรรมย่อยไม่ถูกต้อง (รอบสแกน: "${sessionRule.subActivity}" / ผู้ใช้จอง: "${rSubActivity}")`;
+            }
+
+            return {
+                valid: false,
+                reason: reason
+            };
+        }
+
+        // On successfully scanning ticket
+        function onTicketScanSuccess(decodedText) {
+            playSuccessSound();
+            
+            // Try parsing scanned details
+            let fname = "";
+            let lname = "";
+            let phone = "";
+            const cleanedText = decodedText.trim();
+
+            if (cleanedText.startsWith('{') && cleanedText.endsWith('}')) {
+                try {
+                    const obj = JSON.parse(cleanedText);
+                    fname = obj.fname || obj.firstName || obj.name || "";
+                    lname = obj.lname || obj.lastName || obj.surname || "";
+                    phone = obj.phone || obj.tel || "";
+                } catch (e) {}
+            }
+
+            if (!fname && cleanedText.includes(',')) {
+                const parts = cleanedText.split(',');
+                if (parts.length >= 3) {
+                    fname = parts[0].trim();
+                    lname = parts[1].trim();
+                    phone = parts[2].trim();
+                }
+            } else if (!fname && cleanedText.includes('|')) {
+                const parts = cleanedText.split('|');
+                if (parts.length >= 3) {
+                    fname = parts[0].trim();
+                    lname = parts[1].trim();
+                    phone = parts[2].trim();
+                }
+            }
+
+            // Search in registrants list
+            let matchedBookings = [];
+            if (fname && lname) {
+                matchedBookings = registrations.filter(r => 
+                    r.fname.toLowerCase() === fname.toLowerCase() && 
+                    r.lname.toLowerCase() === lname.toLowerCase()
+                );
+            } else if (phone) {
+                matchedBookings = registrations.filter(r => r.phone.replace(/[- ]/g, '') === phone.replace(/[- ]/g, ''));
+            } else {
+                // Try fuzzy full search
+                matchedBookings = registrations.filter(r => 
+                    cleanedText.includes(r.fname) || cleanedText.includes(r.phone)
+                );
+            }
+
+            if (matchedBookings.length > 0) {
+                let selectedBooking = null;
+                let validationErrorMsg = "";
+
+                for (let booking of matchedBookings) {
+                    const check = validateScanWithActiveSession(booking);
+                    if (check.valid) {
+                        selectedBooking = booking;
+                        break;
+                    } else {
+                        validationErrorMsg = check.reason;
+                    }
+                }
+
+                if (selectedBooking) {
+                    if (selectedBooking.ticketStatus === 'received') {
+                        showNotification(`คุณ ${selectedBooking.fname} ได้รับบัตรกิจกรรม "${selectedBooking.activity}" ไปแล้วก่อนหน้านี้`, "error");
+                    } else {
+                        selectedBooking.ticketStatus = 'received';
+                        selectedBooking.ticketReceivedTime = new Date().toLocaleString('th-TH');
+                        localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
+                        showNotification(`เช็คอินรับบัตรสำเร็จ: คุณ ${selectedBooking.fname} จำนวน ${selectedBooking.quantity || 1} ใบ`, "success");
+                        updateTicketTabUI();
+                        filterBookings(); 
+                    }
+                } else {
+                    showNotification(`ไม่อนุญาตให้รับบัตร: ${validationErrorMsg}`, "error");
+                }
+            } else {
+                showNotification("ไม่พบประวัติลงทะเบียนของคิวนี้ กรุณาทำการลงทะเบียนก่อน", "error");
+            }
+        }
+
+        // Live filtration search for Ticket checking table list
+        function searchTicketList() {
+            const query = document.getElementById('ticket-search').value.toLowerCase().trim();
+            const container = document.getElementById('ticket-list-container');
+            container.innerHTML = '';
+
+            // MUST only fetch data that matches Active Session (Activity and Sub-activity)
+            const activeFilteredList = getFilteredRegistrationsForActiveSession();
+
+            const searched = activeFilteredList.filter(r => {
+                return (
+                    r.fname.toLowerCase().includes(query) ||
+                    r.lname.toLowerCase().includes(query) ||
+                    r.phone.toLowerCase().includes(query) ||
+                    r.activity.toLowerCase().includes(query)
+                );
+            });
+
+            if (searched.length === 0) {
+                const div = document.createElement('div');
+                div.className = "p-6 text-center text-xs text-slate-400";
+                div.textContent = "ไม่พบรายชื่อผู้รับบัตรที่สอดคล้องตามตารางกิจกรรมย่อยและคำค้นหา";
+                container.appendChild(div);
+                return;
+            }
+
+            searched.forEach(item => {
+                const isPending = item.ticketStatus !== 'received';
+                const wrapper = document.createElement('div');
+                wrapper.className = `p-3.5 flex justify-between items-center hover:bg-slate-50 transition-colors ${!isPending ? 'bg-emerald-50/10' : ''}`;
+                
+                let btnHtml = '';
+                if (isPending) {
+                    const ruleCheck = validateScanWithActiveSession(item);
+                    if (ruleCheck.valid) {
+                        btnHtml = `
+                            <button onclick="toggleTicketStatus(${item.id}, 'received')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>รับบัตร (${item.quantity || 1} ใบ)</span>
+                            </button>
+                        `;
+                    } else {
+                        btnHtml = `
+                            <button onclick="showNotification('ไม่อนุญาต: ${ruleCheck.reason}', 'error')" class="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-semibold flex items-center space-x-1 cursor-not-allowed" title="${ruleCheck.reason}">
+                                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                                <span>สิทธิ์ไม่ตรง</span>
+                            </button>
+                        `;
+                    }
+                } else {
+                    btnHtml = `
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] text-slate-400 font-mono hidden sm:inline">${item.ticketReceivedTime || 'เรียบร้อย'}</span>
+                            <button onclick="toggleTicketStatus(${item.id}, 'pending')" class="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-lg text-xs font-semibold transition-all flex items-center space-x-1" title="คืนสิทธิ์">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                <span>คืนสิทธิ์</span>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                const displaySub = item.subActivity 
+                    ? `${item.subActivity} (${formatSessionDateTime(item)})` 
+                    : (item.subcategory || 'ไม่ได้ระบุ');
+
+                wrapper.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-800 text-sm">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</span>
+                            <span class="inline-flex items-center py-0.5 px-2 rounded-full text-[10px] font-bold border ${isPending ? 'bg-amber-50 text-amber-700 border-amber-150' : 'bg-emerald-50 text-emerald-700 border-emerald-150'}">
+                                ${isPending ? 'ยังไม่ได้รับบัตร' : 'รับแล้ว'}
+                            </span>
+                            <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 font-bold rounded">
+                                ${item.quantity || 1} ใบ
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
+                            <span class="font-semibold text-indigo-600 font-mono">${escapeHTML(item.phone)}</span>
+                            <span class="text-slate-300">|</span>
+                            <span>กิจกรรม: <strong class="text-slate-700">${escapeHTML(item.activity)}</strong></span>
+                            <span class="text-slate-300">|</span>
+                            <span class="text-slate-400 text-[11px]">${escapeHTML(displaySub)}</span>
+                        </p>
+                    </div>
+                    <div>
+                        ${btnHtml}
+                    </div>
+                `;
+
+                container.appendChild(wrapper);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Interactive toggle handler for Ticket check-in
+        function toggleTicketStatus(bookingId, targetStatus) {
+            const idx = registrations.findIndex(r => r.id === bookingId);
+            if (idx !== -1) {
+                if (targetStatus === 'received') {
+                    const ruleCheck = validateScanWithActiveSession(registrations[idx]);
+                    if (!ruleCheck.valid) {
+                        showNotification(`ไม่สามารถเช็คอินได้: ${ruleCheck.reason}`, "error");
+                        return;
+                    }
+                }
+
+                registrations[idx].ticketStatus = targetStatus;
+                if (targetStatus === 'received') {
+                    registrations[idx].ticketReceivedTime = new Date().toLocaleString('th-TH');
+                    playSuccessSound();
+                    showNotification(`ทำการเช็คอินสิทธิ์รับบัตรคุณ ${registrations[idx].fname} แล้ว`, "success");
+                } else {
+                    delete registrations[idx].ticketReceivedTime;
+                    showNotification(`คืนสิทธิ์รับบัตรคุณ ${registrations[idx].fname} กลับสู่ระบบสำเร็จ`, "info");
+                }
+                localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
+                updateTicketTabUI();
+                filterBookings(); 
+            }
+        }
+
+        // Dynamic Filtering logic for Contacts
+        function filterData() {
+            const query = document.getElementById('search-input').value.toLowerCase().trim();
+            const btnClear = document.getElementById('btn-clear-search');
+
+            if (query.length > 0) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+            }
+
+            const tBodyContacts = document.getElementById('db-table-body');
+            const cardContainer = document.getElementById('db-cards-container');
+            const emptyState = document.getElementById('db-empty-state');
+
+            tBodyContacts.innerHTML = '';
+            cardContainer.innerHTML = '';
+
+            const filtered = database.filter(item => {
+                return (
+                    item.fname.toLowerCase().includes(query) ||
+                    item.lname.toLowerCase().includes(query) ||
+                    item.phone.toLowerCase().includes(query) ||
+                    item.qrRaw.toLowerCase().includes(query)
+                );
+            });
+
+            document.getElementById('stat-total').textContent = database.length;
+            document.getElementById('stat-showing').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((item, index) => {
+                // Populate Desktop table row
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-4 px-5 text-xs text-slate-400">${database.length - database.indexOf(item)}</td>
+                    <td class="py-4 px-5 font-semibold text-slate-800">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</td>
+                    <td class="py-4 px-5 text-emerald-600 font-mono font-medium">${escapeHTML(item.phone)}</td>
+                    <td class="py-4 px-5">
+                        <div class="max-w-[150px] truncate font-mono text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded cursor-help" title="${escapeHTML(item.qrRaw)}">
+                            ${escapeHTML(item.qrRaw)}
+                        </div>
+                    </td>
+                    <td class="py-4 px-5 text-xs text-slate-500">${item.timestamp}</td>
+                    <td class="py-4 px-5 text-center">
+                        <div class="inline-flex space-x-1">
+                            <button onclick="sendRegisteredDataToForm(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-indigo-600 transition-colors" title="พาไปลงทะเบียนกิจกรรม">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editContactRecord(${item.id})" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-emerald-600 transition-colors" title="แก้ไขข้อมูล">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="copyToClipboard('${escapeHTML(item.fname)} ${escapeHTML(item.lname)} - ${escapeHTML(item.phone)}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors" title="คัดลอกข้อมูล">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteContactRecord(${item.id})" class="p-1.5 hover:bg-red-50 rounded-lg text-red-500 hover:text-red-700 transition-colors" title="ลบข้อมูล">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tBodyContacts.appendChild(tr);
+
+                // Populate Mobile layout card
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-full">#${database.length - database.indexOf(item)}</span>
+                            <h4 class="font-bold text-slate-800 text-base mt-1.5">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</h4>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="sendRegisteredDataToForm(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-2 hover:bg-indigo-50 rounded-lg text-indigo-600 transition-colors" title="ไปลงทะเบียน">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="editContactRecord(${item.id})" class="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors" title="แก้ไขข้อมูล">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="copyToClipboard('${escapeHTML(item.fname)} ${escapeHTML(item.lname)} - ${escapeHTML(item.phone)}')" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteContactRecord(${item.id})" class="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-slate-50">
+                        <div>
+                            <p class="text-slate-400">เบอร์โทรศัพท์</p>
+                            <p class="font-semibold text-emerald-600 font-mono mt-0.5">${escapeHTML(item.phone)}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400">เวลาที่บันทึก</p>
+                            <p class="font-medium text-slate-600 mt-0.5">${item.timestamp}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <p class="text-[10px] text-slate-400 font-semibold mb-0.5">ข้อความ QR Code</p>
+                        <p class="text-[10px] font-mono text-slate-500 break-all select-all">${escapeHTML(item.qrRaw)}</p>
+                    </div>
+                `;
+                cardContainer.appendChild(card);
+            });
+
+            // Re-render dynamically injected icons
+            lucide.createIcons();
+        }
+
+        // Style map for activity filter button active/inactive states
+        const bookingActivityFilterStyles = {
+            all: "bg-slate-800 text-white border-slate-800",
+            "ธรรมยาตรา": "bg-amber-600 text-white border-amber-600",
+            "จุดประทีป": "bg-orange-600 text-white border-orange-600",
+            "ตักบาตร": "bg-emerald-600 text-white border-emerald-600",
+            "ทอดผ้าป่า": "bg-sky-600 text-white border-sky-600"
+        };
+        const bookingActivityFilterInactive = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
+
+        // Update active activity filter button and refresh dependent UI
+        function setBookingActivityFilter(activity) {
+            currentBookingActivityFilter = activity;
+
+            document.querySelectorAll('.booking-activity-filter-btn').forEach(btn => {
+                const isActive = btn.dataset.activityFilter === activity;
+                btn.className = "booking-activity-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors " +
+                    (isActive ? bookingActivityFilterStyles[activity] : bookingActivityFilterInactive);
+            });
+
+            populateBookingSubActivityFilter();
+            filterBookings();
+        }
+
+        // Rebuild the sub-activity dropdown options based on current activity filter and stored data
+        function populateBookingSubActivityFilter() {
+            const select = document.getElementById('booking-subactivity-filter');
+            if (!select) return;
+            const prevValue = select.value || 'all';
+
+            const relevant = registrations.filter(r => currentBookingActivityFilter === 'all' || r.activity === currentBookingActivityFilter);
+            const uniqueSubs = [...new Set(relevant.map(r => r.subActivity).filter(Boolean))];
+
+            select.innerHTML = '<option value="all">ทั้งหมด</option>' +
+                uniqueSubs.map(s => `<option value="${escapeHTML(s)}">${escapeHTML(s)}</option>`).join('');
+
+            select.value = uniqueSubs.includes(prevValue) ? prevValue : 'all';
+        }
+
+        // Dynamic Filtering logic for Bookings Registrations list
+        function filterBookings() {
+            const query = document.getElementById('booking-search-input').value.toLowerCase().trim();
+            const btnClear = document.getElementById('btn-clear-booking-search');
+
+            if (query.length > 0) {
+                btnClear.classList.remove('hidden');
+            } else {
+                btnClear.classList.add('hidden');
+            }
+
+            const tBodyBookings = document.getElementById('db-bookings-table-body');
+            const cardContainer = document.getElementById('booking-cards-container');
+            const emptyState = document.getElementById('booking-empty-state');
+
+            tBodyBookings.innerHTML = '';
+            cardContainer.innerHTML = '';
+
+            const activityFilter = currentBookingActivityFilter;
+            const subActivitySelect = document.getElementById('booking-subactivity-filter');
+            const subActivityFilter = subActivitySelect ? subActivitySelect.value : 'all';
+            const hideReceivedEl = document.getElementById('booking-hide-received');
+            const hideReceived = hideReceivedEl ? hideReceivedEl.checked : false;
+
+            const filtered = registrations.filter(item => {
+                const matchesQuery = (
+                    item.fname.toLowerCase().includes(query) ||
+                    item.lname.toLowerCase().includes(query) ||
+                    item.phone.toLowerCase().includes(query) ||
+                    item.activity.toLowerCase().includes(query) ||
+                    (item.subActivity && item.subActivity.toLowerCase().includes(query)) ||
+                    (item.subcategory && item.subcategory.toLowerCase().includes(query))
+                );
+                const matchesActivity = activityFilter === 'all' || item.activity === activityFilter;
+                const matchesSubActivity = subActivityFilter === 'all' || item.subActivity === subActivityFilter;
+                const matchesReceived = !hideReceived || item.ticketStatus !== 'received';
+
+                return matchesQuery && matchesActivity && matchesSubActivity && matchesReceived;
+            });
+
+            document.getElementById('booking-stat-total-count').textContent = registrations.length;
+            document.getElementById('booking-stat-showing-count').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((item, index) => {
+                let actBadgeCls = "bg-emerald-50 text-emerald-700 border-emerald-150";
+                if (item.activity === 'ธรรมยาตรา') actBadgeCls = "bg-amber-50 text-amber-700 border-amber-150";
+                else if (item.activity === 'จุดประทีป') actBadgeCls = "bg-orange-50 text-orange-700 border-orange-150";
+                else if (item.activity === 'ทอดผ้าป่า') actBadgeCls = "bg-sky-50 text-sky-700 border-sky-150";
+
+                const isTicketReceived = item.ticketStatus === 'received';
+                const ticketBadgeCls = isTicketReceived 
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
+                    : "bg-red-50 text-red-700 border-red-150";
+
+                const displaySub = item.subActivity 
+                    ? `${item.subActivity} (${toThaiDate(item.date)})` 
+                    : (item.subcategory || 'ไม่ได้ระบุ');
+
+                // Populate Desktop Table
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-4 px-5 text-xs text-slate-400">${registrations.length - registrations.indexOf(item)}</td>
+                    <td class="py-4 px-5 font-bold text-slate-800">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</td>
+                    <td class="py-4 px-5 text-slate-600 font-mono font-medium">${escapeHTML(item.phone)}</td>
+                    <td class="py-4 px-5">
+                        <span class="inline-flex items-center gap-1 py-1 px-2.5 border rounded-full text-xs font-bold ${actBadgeCls}">
+                            ${escapeHTML(item.activity)}
+                        </span>
+                    </td>
+                    <td class="py-4 px-5 text-xs text-slate-700 font-medium">${escapeHTML(displaySub)}</td>
+                    <td class="py-4 px-5 text-sm font-bold text-slate-800 font-mono text-center">${item.quantity || 1}</td>
+                    <td class="py-4 px-5">
+                        <span class="inline-flex py-0.5 px-2 border rounded text-xs font-semibold ${ticketBadgeCls}">
+                            ${isTicketReceived ? 'รับแล้ว' : 'ยังไม่รับ'}
+                        </span>
+                    </td>
+                    <td class="py-4 px-5 text-xs text-slate-500">${item.timestamp}</td>
+                    <td class="py-4 px-5 text-center">
+                        <div class="inline-flex space-x-1">
+                            <button onclick="editBooking(${item.id})" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-emerald-600 transition-colors" title="แก้ไขการลงทะเบียน">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteBookingRecord(${item.id})" class="p-1.5 hover:bg-red-50 rounded-lg text-red-500 hover:text-red-700 transition-colors" title="ยกเลิกการลงทะเบียน">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tBodyBookings.appendChild(tr);
+
+                // Populate Mobile Layout Card
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-full">#${registrations.length - registrations.indexOf(item)}</span>
+                            <h4 class="font-bold text-slate-800 text-base mt-1.5">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</h4>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="editBooking(${item.id})" class="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors" title="แก้ไข">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteBookingRecord(${item.id})" class="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="ลบข้อมูล">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-1 text-xs pt-2 border-t border-slate-50">
+                        <div>
+                            <p class="text-slate-400">เบอร์โทรศัพท์</p>
+                            <p class="font-semibold text-slate-700 font-mono mt-0.5">${escapeHTML(item.phone)}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400">กิจกรรมหลัก</p>
+                            <div class="mt-1">
+                                <span class="inline-flex py-0.5 px-2 border rounded-full text-[10px] font-bold ${actBadgeCls}">
+                                    ${escapeHTML(item.activity)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-slate-400">จำนวนบัตร</p>
+                            <p class="font-bold text-slate-800 text-sm mt-0.5">${item.quantity || 1} ใบ</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">กิจกรรมย่อย (วัน / สถานที่)</p>
+                        <p class="text-xs font-bold text-slate-700">${escapeHTML(displaySub)}</p>
+                        <div class="flex justify-between items-center pt-2">
+                            <p class="text-[10px] text-slate-400">เวลาลงทะเบียน: ${item.timestamp}</p>
+                            <span class="inline-flex py-0.5 px-2 border rounded text-[10px] font-bold ${ticketBadgeCls}">
+                                ${isTicketReceived ? 'รับบัตรแล้ว' : 'ยังไม่รับบัตร'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                cardContainer.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Action helper from list to fill registration
+        function sendRegisteredDataToForm(item) {
+            switchTab('register');
+            document.getElementById('reg-fname').value = item.fname;
+            document.getElementById('reg-lname').value = item.lname;
+            document.getElementById('reg-phone').value = item.phone;
+            showNotification(`นำข้อมูลคุณ ${item.fname} เติมในฟอร์มแล้ว`, "info");
+        }
+
+        // Helper cleanup search string text
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            filterData();
+        }
+
+        // Helper cleanup bookings search string text
+        function clearBookingSearch() {
+            document.getElementById('booking-search-input').value = '';
+            filterBookings();
+        }
+
+        // Open the edit-contact modal populated with an existing record's data
+        function editContactRecord(id) {
+            const contact = database.find(item => item.id === id);
+            if (!contact) return;
+
+            editingContactId = id;
+            document.getElementById('edit-contact-fname').value = contact.fname;
+            document.getElementById('edit-contact-lname').value = contact.lname;
+            document.getElementById('edit-contact-phone').value = contact.phone;
+            document.getElementById('edit-contact-qrraw').value = contact.qrRaw;
+
+            const modal = document.getElementById('edit-contact-modal');
+            const innerModal = modal.querySelector('.transform');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                innerModal.classList.remove('scale-95');
+                innerModal.classList.add('scale-100');
+            }, 10);
+        }
+
+        // Close the edit-contact modal without saving
+        function closeEditContactModal() {
+            const modal = document.getElementById('edit-contact-modal');
+            const innerModal = modal.querySelector('.transform');
+
+            modal.classList.add('opacity-0');
+            innerModal.classList.add('scale-95');
+            innerModal.classList.remove('scale-100');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                editingContactId = null;
+            }, 300);
+        }
+
+        // Persist edits made in the edit-contact modal back to the database
+        function saveEditedContact() {
+            if (editingContactId === null) return;
+
+            const fname = document.getElementById('edit-contact-fname').value.trim();
+            const lname = document.getElementById('edit-contact-lname').value.trim();
+            const phone = document.getElementById('edit-contact-phone').value.trim();
+            const qrRaw = document.getElementById('edit-contact-qrraw').value.trim();
+
+            if (!fname || !lname || !phone) {
+                showNotification("กรุณากรอกชื่อจริง นามสกุล และเบอร์โทรศัพท์ให้ครบถ้วน", "error");
+                return;
+            }
+
+            const idx = database.findIndex(item => item.id === editingContactId);
+            if (idx !== -1) {
+                database[idx] = {
+                    ...database[idx],
+                    fname: fname,
+                    lname: lname,
+                    phone: phone,
+                    qrRaw: qrRaw
+                };
+                localStorage.setItem('qr_scan_database', JSON.stringify(database));
+                updateDatabaseUI();
+                showNotification("แก้ไขข้อมูลรายชื่อสำเร็จ", "success");
+            }
+
+            closeEditContactModal();
+        }
+
+        // Deleting scanned contacts records
+        function deleteContactRecord(id) {
+            showCustomConfirm(
+                "ลบรายชื่อผู้สแกน", 
+                "คุณต้องการลบรายชื่อผู้สแกนรายการนี้ออกจากคลังหรือไม่? (ข้อมูลจองกิจกรรมของผู้ใช้นี้จะยังคงอยู่)", 
+                () => {
+                    database = database.filter(item => item.id !== id);
+                    localStorage.setItem('qr_scan_database', JSON.stringify(database));
+                    updateDatabaseUI();
+                    showNotification("ลบประวัติรายชื่อออกจากคลังรายชื่อสแกนแล้ว", "success");
+                }
+            );
+        }
+
+        // Deleting booking record
+        function deleteBookingRecord(id) {
+            showCustomConfirm(
+                "ยกเลิกการลงทะเบียนกิจกรรม", 
+                "คุณแน่ใจว่าต้องการยกเลิกและลบประวัติการลงทะเบียนของรายการกิจกรรมนี้?", 
+                () => {
+                    registrations = registrations.filter(item => item.id !== id);
+                    localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
+                    updateDatabaseUI();
+                    showNotification("ยกเลิกการลงทะเบียนเสร็จสิ้น", "success");
+                }
+            );
+        }
+
+        // Empty contacts database logic
+        function triggerClearDatabase() {
+            if (database.length === 0) {
+                showNotification("ไม่มีรายชื่อให้ล้างทำความสะอาดระบบ", "error");
+                return;
+            }
+            showCustomConfirm(
+                "ล้างคลังรายชื่อทั้งหมด", 
+                "คำเตือน: คุณต้องการลบคลังรายชื่อผู้สแกนทั้งหมดใช่หรือไม่? การทำงานนี้ไม่สามารถเรียกคืนค่าเดิมได้!", 
+                () => {
+                    database = [];
+                    localStorage.removeItem('qr_scan_database');
+                    updateDatabaseUI();
+                    showNotification("ฐานข้อมูลรายชื่อสแกนถูกล้างออกเรียบร้อย", "success");
+                }
+            );
+        }
+
+        // Empty bookings registrations database logic
+        function triggerClearBookings() {
+            if (registrations.length === 0) {
+                showNotification("ไม่มีรายการจองกิจกรรมให้ล้างทำความสะอาด", "error");
+                return;
+            }
+            showCustomConfirm(
+                "ล้างประวัติลงทะเบียนทั้งหมด", 
+                "คำเตือน: คุณต้องการลบประวัติลงทะเบียนและจองกิจกรรมทั้งหมดใช่หรือไม่? ประวัติการเข้าร่วมทั้งหมดจะสูญหายอย่างถาวร!", 
+                () => {
+                    registrations = [];
+                    localStorage.removeItem('qr_activity_registrations');
+                    updateDatabaseUI();
+                    showNotification("ประวัติลงทะเบียนกิจกรรมถูกล้างออกเรียบร้อย", "success");
+                }
+            );
+        }
+
+        // Build and Trigger Contacts CSV downloading mechanism
+        function exportDataToCSV() {
+            if (database.length === 0) {
+                showNotification("ไม่มีรายชื่อบันทึกสะสมที่จะส่งออก", "error");
+                return;
+            }
+
+            // Thai-Language CSV Header UTF-8 with BOM Support
+            let csvContent = "\uFEFF";
+            csvContent += "ลำดับ,ชื่อจริง,นามสกุล,เบอร์โทรศัพท์,ข้อความ QR Code,วันเวลาบันทึก\r\n";
+
+            database.forEach((item, index) => {
+                const num = database.length - index;
+                const cleanRaw = item.qrRaw.replace(/"/g, '""');
+                csvContent += `"${num}","${item.fname}","${item.lname}","${item.phone}","${cleanRaw}","${item.timestamp}"\r\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `QR_Scan_Contacts_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification("สร้างและดาวน์โหลดไฟล์ CSV รายชื่อเรียบร้อย", "success");
+        }
+
+        // Build and Trigger Bookings CSV downloading mechanism
+        function exportBookingsToCSV() {
+            if (registrations.length === 0) {
+                showNotification("ไม่มีรายชื่อลงทะเบียนกิจกรรมที่จะส่งออก", "error");
+                return;
+            }
+
+            let csvContent = "\uFEFF";
+            csvContent += "ลำดับ,ชื่อจริง,นามสกุล,เบอร์โทรศัพท์,กิจกรรมหลัก,กิจกรรมย่อย/สถานที่,จำนวน,สถานะ,วันเวลาลงทะเบียน\r\n";
+
+            registrations.forEach((item, index) => {
+                const num = registrations.length - index;
+                const displaySub = item.subActivity 
+                    ? `${item.subActivity} (${toThaiDate(item.date)})` 
+                    : (item.subcategory || 'ไม่ได้ระบุ');
+
+                const statusText = item.ticketStatus === 'received' ? 'รับบัตรแล้ว' : 'ยังไม่รับบัตร';
+
+                csvContent += `"${num}","${item.fname}","${item.lname}","${item.phone}","${item.activity}","${displaySub}","${item.quantity || 1}","${statusText}","${item.timestamp}"\r\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `QR_Activity_Registrations_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification("สร้างและดาวน์โหลดไฟล์ CSV ประวัติจองกิจกรรมเรียบร้อย", "success");
+        }
+
+        // Generator Utility engine
+        function generateQRCode() {
+            const fname = document.getElementById('gen-fname').value.trim();
+            const lname = document.getElementById('gen-lname').value.trim();
+            const phone = document.getElementById('gen-phone').value.trim();
+
+            if (!fname || !lname || !phone) {
+                showNotification("กรุณากรอกข้อมูลทั้งหมดเพื่อสร้าง QR Code", "error");
+                return;
+            }
+
+            let payload = "";
+
+            if (selectedFormat === 'json') {
+                payload = JSON.stringify({
+                    fname: fname,
+                    lname: lname,
+                    phone: phone
+                });
+            } else if (selectedFormat === 'csv') {
+                payload = `${fname},${lname},${phone}`;
+            } else {
+                payload = `${fname}|${lname}|${phone}`;
+            }
+
+            const encodedPayload = encodeURIComponent(payload);
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodedPayload}`;
+
+            const qrImg = document.getElementById('gen-qr-img');
+            qrImg.src = qrUrl;
+
+            const qrDownload = document.getElementById('gen-qr-download');
+            qrDownload.href = qrUrl;
+
+            document.getElementById('gen-qr-payload').textContent = payload;
+            document.getElementById('gen-qr-wrapper').classList.remove('hidden');
+            
+            showNotification("สร้าง QR Code เพื่อทดสอบเสร็จเรียบร้อย", "success");
+        }
+
+        // Fallback placeholder handler if generator API goes offline
+        function handleQrImageError() {
+            const qrImg = document.getElementById('gen-qr-img');
+            qrImg.src = `https://placehold.co/250x250/f1f5f9/64748b?text=QR+API+Offline`;
+            showNotification("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ผู้สร้างภาพคิวอาร์โค้ดได้ชั่วขณะ", "error");
+        }
+
+        // Strip any non-numeric characters as the user types (used for phone number fields)
+        function filterNumericInput(inputEl) {
+            const filtered = inputEl.value.replace(/[^0-9]/g, '');
+            if (inputEl.value !== filtered) {
+                inputEl.value = filtered;
+            }
+        }
+
+        // Robust HTML escape injection helper
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Clipboard Copy Action for items info details
+        function copyToClipboard(text) {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            showNotification("คัดลอกข้อมูลลงคลิปบอร์ดแล้ว!", "info");
+        }
+    </script>
+</body>
+</html>
