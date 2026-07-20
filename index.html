@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" class="h-full bg-slate-100">
+<html lang="th" class="h-full bg-slate-150">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -179,7 +179,7 @@
             <div class="bg-slate-800/40 rounded-lg p-2.5 border border-slate-800 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] text-slate-400">ฐานข้อมูลของระบบ</p>
-                    <p class="text-xs font-bold text-slate-200" id="sync-status-text">ซิงก์ล่าสุด: เพิ่งสแกน</p>
+                    <p class="text-xs font-bold text-slate-200" id="sync-status-text">ซิงก์ล่าสุด: อัตโนมัติ</p>
                 </div>
                 <button onclick="triggerSync()" class="p-1.5 hover:bg-slate-700 text-sky-400 rounded transition-colors" title="Sync Cloud Data">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon-desktop"></i>
@@ -227,7 +227,7 @@
         <!-- Sidebar footer status -->
         <div class="p-3 border-t border-slate-800 bg-slate-950/40 text-[10px] text-slate-500 space-y-0.5 sidebar-footer">
             <div class="flex justify-between items-center">
-                <span>App Version: v3.5 (Prod)</span>
+                <span>App Version: v3.6 (Prod)</span>
                 <span class="text-emerald-500 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online</span>
             </div>
             <p class="text-[9px] text-slate-600 text-center pt-1 border-t border-slate-850">Data-V-Move Powered by Google Sheet</p>
@@ -325,9 +325,10 @@
                                 <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">เบอร์โทรศัพท์</p>
                                 <p id="tconfirm-phone" class="text-xs font-bold text-slate-600 font-mono mt-0.5">-</p>
                             </div>
+                            <!-- EDIT: Allow editing quantity directly inside the Scan confirmation modal -->
                             <div class="bg-slate-50 p-2.5 rounded border border-slate-200">
-                                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">จำนวนบัตร</p>
-                                <p id="tconfirm-qty" class="text-xs font-bold text-sky-600 mt-0.5">-</p>
+                                <label for="tconfirm-qty-input" class="block text-[9px] text-slate-400 font-bold uppercase tracking-wider">จำนวนบัตรรับจริง <span class="text-emerald-600 font-semibold">(แก้ไขได้)</span></label>
+                                <input type="number" id="tconfirm-qty-input" min="1" max="100" class="w-full bg-white border border-slate-300 rounded p-1 text-xs font-bold text-slate-800 mt-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                             </div>
                         </div>
 
@@ -417,7 +418,7 @@
                         <div class="mt-3 w-full max-w-sm border-t border-dashed border-slate-200 pt-3 text-center">
                             <label for="manual-qr-input" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">หรือป้อนเบอร์โทร/ข้อความ QR Code ดิบ</label>
                             <div class="flex gap-1.5">
-                                <input type="text" id="manual-qr-input" inputmode="numeric" oninput="filterNumericInput(this)" placeholder="พิมพ์ข้อมูล QR Code..." class="flex-1 bg-white border border-slate-200 rounded py-1 px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500">
+                                <input type="text" id="manual-qr-input" inputmode="numeric" oninput="filterNumericInput(this)" placeholder="พิมพ์ข้อมูล QR Code..." class="flex-1 bg-white border border-slate-200 rounded py-1 px-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium">
                                 <button onclick="processManualQrInput()" class="inline-flex items-center space-x-1 bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition-colors">
                                     <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                     <span>ตกลง</span>
@@ -680,24 +681,20 @@
                                 <i data-lucide="shield-alert" class="w-4 h-4"></i>
                             </div>
                             <div>
-                                <h3 class="font-bold text-slate-100 text-xs uppercase tracking-wider">ตรวจสอบคัดกรองตามรอบกิจกรรม (Active Session)</h3>
+                                <h3 class="font-bold text-slate-100 text-xs uppercase tracking-wider">ระบบตรวจรับบัตรอัตโนมัติ (ตามปฏิทิน & เวลาปัจจุบัน)</h3>
                             </div>
                         </div>
                         <span id="session-status-badge" class="inline-flex py-0.5 px-2.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                            ยังไม่มีการเลือกตารางสแกน
+                            ตรวจหากิจกรรมอัตโนมัติ
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label for="active-session-select" class="block text-[10px] font-bold text-slate-400 uppercase mb-1">สแกนรับบัตรเฉพาะกิจกรรมรอบ:</label>
-                            <select id="active-session-select" onchange="applyActiveSessionFilter()" class="w-full bg-slate-850 border border-slate-700 text-slate-100 rounded p-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 font-bold">
-                                <option value="">-- ดึงรายชื่อกลุ่มจัดงานล่วงหน้า... --</option>
-                            </select>
-                        </div>
-                        <div class="bg-slate-800/20 p-2 border border-slate-800/60 rounded flex flex-col justify-center">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">สถานะรอบคัดกรอง:</p>
-                            <p id="active-session-summary" class="text-[11px] font-semibold text-slate-200 mt-0.5 leading-relaxed">กำลังดึงตารางเวลา...</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        <!-- EDIT: Removed the dropdown select completely to match requirement. Hidden Select is kept to prevent breaking references. -->
+                        <select id="active-session-select" onchange="applyActiveSessionFilter()" class="hidden"></select>
+                        <div class="bg-slate-800/20 p-3 border border-slate-800/60 rounded flex flex-col justify-center">
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">ตารางเวลาสแกนที่กำลังเปิดใช้งานขณะนี้:</p>
+                            <p id="active-session-summary" class="text-xs font-semibold text-slate-200 mt-1 leading-relaxed">กำลังจับคู่ตารางเวลากับเวลาปัจจุบันบนเครื่อง...</p>
                         </div>
                     </div>
                 </div>
@@ -1153,6 +1150,60 @@
             return `${day} ${months[monthIdx]} ${year}`;
         }
 
+        // NEW: Automatically lookup active session based on current system time
+        function getAutomaticallyActiveSession() {
+            if (scanSessions.length === 0) return null;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const currentDateStr = `${year}-${month}-${day}`; // yyyy-mm-dd
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            const currentTimeVal = currentHours * 60 + currentMinutes;
+
+            // 1. Try to find a session running right now
+            let active = scanSessions.find(s => {
+                if (s.date !== currentDateStr) return false;
+                const startParts = s.startTime.split(':');
+                const endParts = s.endTime.split(':');
+                const startVal = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+                const endVal = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+                return currentTimeVal >= startVal && currentTimeVal <= endVal;
+            });
+
+            // 2. Fallback: Find any session scheduled for the same day
+            if (!active) {
+                active = scanSessions.find(s => s.date === currentDateStr);
+            }
+
+            // 3. Last Fallback: Just return the first session in the list
+            if (!active) {
+                active = scanSessions[0];
+            }
+            return active;
+        }
+
+        // Automatically run active session detection
+        function autoSelectActiveSession() {
+            const selectFilter = document.getElementById('active-session-select');
+            if (!selectFilter) return;
+
+            if (scanSessions.length === 0) {
+                selectFilter.value = "";
+                applyActiveSessionFilter();
+                return;
+            }
+
+            const active = getAutomaticallyActiveSession();
+            if (active) {
+                selectFilter.value = String(active.id);
+            } else {
+                selectFilter.value = String(scanSessions[0].id);
+            }
+            applyActiveSessionFilter();
+        }
+
         // Load default sessions for quick start
         function loadDefaultSessions() {
             scanSessions = [
@@ -1326,9 +1377,6 @@
             const listContainer = document.getElementById('sessions-list-container');
             const selectFilter = document.getElementById('active-session-select');
 
-            // Save old value to restore
-            const oldSelected = selectFilter.value;
-
             listContainer.innerHTML = '';
 
             if (scanSessions.length === 0) {
@@ -1378,14 +1426,8 @@
                 });
             }
 
-            // Restore selector state if possible; otherwise auto-select the first configured session
-            if ([...selectFilter.options].some(o => o.value === oldSelected) && oldSelected) {
-                selectFilter.value = oldSelected;
-            } else if (scanSessions.length > 0) {
-                selectFilter.value = String(scanSessions[0].id);
-            }
-
-            applyActiveSessionFilter();
+            // NEW: Automatically run smart selector logic
+            autoSelectActiveSession();
             lucide.createIcons();
         }
 
@@ -1406,8 +1448,8 @@
                 const session = scanSessions.find(s => s.id === activeId);
                 if (session) {
                     badge.className = "inline-flex py-0.5 px-2.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30";
-                    badge.textContent = `จำกัด: ${session.activity} (${session.subActivity})`;
-                    summary.innerHTML = `สแกนสิทธิ์เฉพาะ <strong class="text-sky-300">"${session.activity}" - "${session.subActivity}"</strong> วันที่ <strong class="text-sky-300">"${toThaiDate(session.date)}"</strong> เวลา <strong class="text-sky-300">${session.startTime}-${session.endTime} น.</strong> เท่านั้น`;
+                    badge.textContent = `เปิดรอบ: ${session.activity}`;
+                    summary.innerHTML = `ตรวจจับรอบจัดงานสำเร็จ: <strong class="text-sky-300">"${session.activity}" - "${session.subActivity}"</strong> วันที่ <strong class="text-sky-300">"${toThaiDate(session.date)}"</strong> เวลา <strong class="text-sky-300">${session.startTime}-${session.endTime} น.</strong>`;
                 }
             }
 
@@ -1528,6 +1570,7 @@
             } else if (tabId === 'bookings-list') {
                 filterBookings();
             } else if (tabId === 'ticket') {
+                autoSelectActiveSession(); // Re-evaluate current system time on tab visit
                 updateTicketTabUI();
             } else if (tabId === 'scheduler') {
                 updateSessionsUI();
@@ -2275,7 +2318,7 @@
         // Validate booking ticket registration against Active scan sessions rule
         function validateScanWithActiveSession(booking) {
             if (!activeSessionFilter) {
-                return { valid: false, reason: "ยังไม่ได้เลือกตารางเวลาสแกนที่ใช้งาน กรุณาเลือกรอบก่อนรับบัตร" };
+                return { valid: false, reason: "ยังไม่ได้ตรวจพบตารางสแกนที่เริ่มขึ้นขณะนี้ กรุณาตรวจสอบรอบเวลา" };
             }
 
             const activeId = parseInt(activeSessionFilter);
@@ -2446,7 +2489,9 @@
             
             document.getElementById('tconfirm-name').textContent = `${booking.fname} ${booking.lname}`;
             document.getElementById('tconfirm-phone').textContent = booking.phone || 'ไม่ได้ระบุ';
-            document.getElementById('tconfirm-qty').textContent = `${booking.quantity || 1} ใบ`;
+            
+            // EDIT: Load the quantity value into the input field so it is fully editable
+            document.getElementById('tconfirm-qty-input').value = booking.quantity || 1;
             document.getElementById('tconfirm-activity').textContent = `${booking.activity} - ${booking.subActivity || 'ทั่วไป'}`;
 
             const statusBox = document.getElementById('tconfirm-status-box');
@@ -2497,17 +2542,23 @@
             }, 200);
         }
 
-        // Save Scanned Checkin confirmed from modal
+        // EDIT: Save Scanned Checkin with potential edited quantity value
         function saveScannedTicketCheckin() {
             if (scannedTicketBookingId === null) return;
 
             const idx = registrations.findIndex(r => r.id === scannedTicketBookingId);
             if (idx !== -1) {
+                // Read potentially modified actual attendee quantity
+                const actualQtyInput = document.getElementById('tconfirm-qty-input');
+                const actualQty = parseInt(actualQtyInput.value) || 1;
+
+                // Update quantity and ticket status in database
+                registrations[idx].quantity = actualQty;
                 registrations[idx].ticketStatus = 'received';
                 registrations[idx].ticketReceivedTime = new Date().toLocaleString('th-TH');
                 
                 localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
-                showNotification(`เช็คอินรับบัตรสำเร็จ: คุณ ${registrations[idx].fname} จำนวน ${registrations[idx].quantity || 1} ใบ`, "success");
+                showNotification(`เช็คอินรับบัตรสำเร็จ: คุณ ${registrations[idx].fname} จำนวน ${actualQty} ใบ`, "success");
                 
                 updateTicketTabUI();
                 filterBookings();
@@ -2552,7 +2603,7 @@
                     const ruleCheck = validateScanWithActiveSession(item);
                     if (ruleCheck.valid) {
                         btnHtml = `
-                            <button onclick="toggleTicketStatus(${item.id}, 'received')" class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded text-[11px] font-semibold shadow-sm transition-all flex items-center space-x-1">
+                            <button onclick="showTicketConfirmModal(${JSON.stringify(item).replace(/"/g, '&quot;')}, {valid: true})" class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded text-[11px] font-semibold shadow-sm transition-all flex items-center space-x-1">
                                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                 <span>รับบัตร (${item.quantity || 1} ใบ)</span>
                             </button>
