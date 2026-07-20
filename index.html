@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner & Database Manager Pro</title>
+    <title>Data-V-Move</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Prompt & Sarabun for beautiful Thai Typography -->
@@ -169,11 +169,6 @@
                 </span>
                 <span class="text-[10px] font-semibold leading-none">คลังรายชื่อ</span>
             </button>
-            <button onclick="switchTab('generator')" id="mtab-generator" class="mobile-nav-btn relative flex-shrink-0 basis-1/5 min-w-[64px] flex flex-col items-center justify-center gap-1 py-2.5 text-slate-400 transition-colors">
-                <span class="mnav-indicator absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-emerald-400"></span>
-                <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                <span class="text-[10px] font-semibold leading-none">สร้าง QR</span>
-            </button>
         </div>
     </nav>
 
@@ -236,10 +231,6 @@
                 <i data-lucide="user-check" class="w-4 h-4"></i>
                 <span>คลังรายชื่อผู้สแกน</span>
                 <span id="badge-count" class="ml-auto py-0.5 px-1.5 text-[10px] font-bold rounded-full bg-slate-800 text-slate-400">0</span>
-            </button>
-            <button onclick="switchTab('generator')" id="tab-generator" class="w-full py-2.5 px-3 rounded-xl flex items-center space-x-3 text-sm font-semibold transition-all duration-200 text-slate-400 hover:text-white hover:bg-slate-800/50">
-                <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                <span>สร้าง QR ทดสอบ</span>
             </button>
         </nav>
 
@@ -322,6 +313,54 @@
             </div>
         </div>
 
+        <!-- Ticket Scan Confirmation Modal -->
+        <div id="ticket-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden transform scale-95 transition-transform duration-300">
+                <div class="p-6 space-y-4">
+                    <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                        <span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                            <i data-lucide="ticket" class="w-5 h-5"></i>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-900">ตรวจสอบรายละเอียดสิทธิ์รับบัตร</h3>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-150 space-y-1">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ชื่อผู้ลงทะเบียน</p>
+                            <p id="tconfirm-name" class="text-base font-bold text-slate-850">-</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">เบอร์โทรศัพท์</p>
+                                <p id="tconfirm-phone" class="text-xs font-bold text-slate-700 font-mono mt-0.5">-</p>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">จำนวนที่จอง</p>
+                                <p id="tconfirm-qty" class="text-xs font-bold text-emerald-600 mt-0.5">-</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-150 space-y-1">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">กิจกรรมหลัก / กิจกรรมย่อย (สถานที่)</p>
+                            <p id="tconfirm-activity" class="text-xs font-bold text-slate-800">-</p>
+                        </div>
+
+                        <div id="tconfirm-status-box" class="p-3 rounded-xl border text-xs font-semibold flex items-center gap-2">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-50 px-6 py-4 flex justify-end space-x-3">
+                    <button onclick="closeTicketConfirmModal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-sm font-semibold transition-all">ยกเลิก</button>
+                    <button id="btn-ticket-confirm-save" onclick="saveScannedTicketCheckin()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span>บันทึกรับบัตร</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <main class="flex-grow w-full px-4 sm:px-6 lg:px-8 py-6">
 
             <!-- VIEW 1: SCAN QR CODE -->
@@ -341,35 +380,35 @@
                         </div>
                     </div>
 
-                    <!-- Scanner Viewport Area -->
+                    <!-- Scanner Viewport Area (Adjusted for tighter compact size when inactive) -->
                     <div class="p-6 flex flex-col items-center">
-                        <div class="relative w-full max-w-sm aspect-square bg-slate-900 rounded-2xl overflow-hidden shadow-inner border-4 border-slate-800 flex flex-col justify-center items-center">
+                        <div class="relative w-full max-w-[280px] aspect-[4/3] bg-slate-900 rounded-xl overflow-hidden shadow-inner border-4 border-slate-800 flex flex-col justify-center items-center">
                             <!-- Scanning Laser Line overlay (active when scanning) -->
                             <div id="scanner-laser" class="scanner-laser hidden"></div>
                             
                             <!-- Main QR engine container -->
                             <div id="reader" class="w-full h-full bg-slate-900"></div>
 
-                            <!-- Fallback instruction state -->
-                            <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-4 bg-slate-900 z-10">
-                                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-emerald-500 shadow-lg">
-                                    <i data-lucide="camera-off" class="w-8 h-8"></i>
+                            <!-- Compact fallback instruction state -->
+                            <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-slate-400 space-y-2 bg-slate-900 z-10">
+                                <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-emerald-500 shadow-md">
+                                    <i data-lucide="camera-off" class="w-5 h-5"></i>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-slate-200">ยังไม่ได้เปิดใช้งานกล้อง</p>
-                                    <p class="text-xs mt-1 text-slate-500">กรุณากดปุ่ม "เปิดใช้งานกล้อง" หรืออัปโหลดไฟล์รูปภาพ QR Code ด้านล่าง</p>
+                                    <p class="font-semibold text-sm text-slate-200">ยังไม่ได้เปิดใช้งานกล้อง</p>
+                                    <p class="text-[10px] mt-0.5 text-slate-500 px-2 leading-relaxed">กรุณาเปิดใช้งานกล้อง หรือเลือกรูปภาพ QR Code ด้านล่าง</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Scanner Controls Buttons -->
-                        <div class="mt-6 flex flex-wrap justify-center gap-3 w-full max-w-sm">
-                            <button id="btn-start-camera" onclick="startScanner()" class="flex-1 inline-flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-colors duration-200">
-                                <i data-lucide="video" class="w-4 h-4"></i>
+                        <div class="mt-5 flex flex-wrap justify-center gap-3 w-full max-w-[280px]">
+                            <button id="btn-start-camera" onclick="startScanner()" class="flex-1 inline-flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium py-2.5 px-3 rounded-xl shadow-md transition-colors duration-200 text-xs">
+                                <i data-lucide="video" class="w-3.5 h-3.5"></i>
                                 <span>เปิดกล้อง</span>
                             </button>
-                            <button id="btn-stop-camera" onclick="stopScanner()" disabled class="flex-1 inline-flex items-center justify-center space-x-2 bg-slate-100 text-slate-400 font-medium py-3 px-4 rounded-xl transition-all duration-200 cursor-not-allowed">
-                                <i data-lucide="video-off" class="w-4 h-4"></i>
+                            <button id="btn-stop-camera" onclick="stopScanner()" disabled class="flex-1 inline-flex items-center justify-center space-x-2 bg-slate-100 text-slate-400 font-medium py-2.5 px-3 rounded-xl transition-all duration-200 cursor-not-allowed text-xs">
+                                <i data-lucide="video-off" class="w-3.5 h-3.5"></i>
                                 <span>ปิดกล้อง</span>
                             </button>
                         </div>
@@ -905,7 +944,7 @@
                         <div>
                             <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
                                 <i data-lucide="clipboard-list" class="w-5 h-5 text-emerald-600"></i>
-                                <span>ข้อมูลลงทะเบียนเข้าร่วมกิจกรรมทั้งหมด</span>
+                                <span>ข้อมูลลงทะเบียนกิจกรรม</span>
                             </h2>
                             <p class="text-xs text-slate-400 mt-0.5">ตารางรายการผู้ลงทะเบียนจองเข้าร่วมงานบุญและกิจกรรมทั้งหมดในระบบ</p>
                         </div>
@@ -1019,82 +1058,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- VIEW 4: QR CODE GENERATOR -->
-            <div id="view-generator" class="space-y-6 hidden">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
-                            <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
-                            <span>สร้าง QR Code ส่วนตัวสำหรับใช้ทดสอบ</span>
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">กรอกข้อมูลส่วนบุคคลเพื่อสร้าง QR Code จากนั้นลองนำไปสแกนด้วยโหมดกล้องถ่ายรูปได้ทันที</p>
-                    </div>
-
-                    <!-- Input form for generation -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="gen-fname" class="block text-xs font-bold text-slate-600 mb-1.5">ชื่อจริง</label>
-                            <input type="text" id="gen-fname" value="ทองดี" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
-                        </div>
-                        <div>
-                            <label for="gen-lname" class="block text-xs font-bold text-slate-600 mb-1.5">นามสกุล</label>
-                            <input type="text" id="gen-lname" value="มีบุญ" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
-                        </div>
-                        <div>
-                            <label for="gen-phone" class="block text-xs font-bold text-slate-600 mb-1.5">เบอร์โทรศัพท์</label>
-                            <input type="tel" id="gen-phone" value="0855551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm">
-                        </div>
-                    </div>
-
-                    <!-- Advanced formatting options -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-2">รูปแบบข้อมูลใน QR Code</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-slate-50" id="fmt-label-json">
-                                <input type="radio" name="gen-format" value="json" checked class="sr-only" onchange="updateFormatSelect('json')">
-                                <span class="text-xs font-bold text-slate-700">JSON</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">(แนะนำสำหรับระบบนี้)</span>
-                            </label>
-                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-white" id="fmt-label-csv">
-                                <input type="radio" name="gen-format" value="csv" class="sr-only" onchange="updateFormatSelect('csv')">
-                                <span class="text-xs font-bold text-slate-700">CSV</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">(ใช้ลูกน้ำคั่น)</span>
-                            </label>
-                            <label class="cursor-pointer border border-slate-200 hover:border-emerald-500 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all bg-white" id="fmt-label-text">
-                                <input type="radio" name="gen-format" value="text" class="sr-only" onchange="updateFormatSelect('text')">
-                                <span class="text-xs font-bold text-slate-700">TEXT</span>
-                                <span class="text-[10px] text-slate-400 mt-0.5">(ใช้ขีดคั่น)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Actions & Output Generator QR display box -->
-                    <div class="flex flex-col sm:flex-row items-center gap-6 pt-4 border-t border-slate-100">
-                        <button onclick="generateQRCode()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span>สร้าง QR Code</span>
-                        </button>
-
-                        <!-- QR Result box -->
-                        <div id="gen-qr-wrapper" class="hidden flex-grow flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 w-full">
-                            <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-250 aspect-square w-36 h-36 flex items-center justify-center">
-                                <img id="gen-qr-img" src="" alt="Generated QR Code" onerror="handleQrImageError()" class="w-full h-full object-contain">
-                            </div>
-                            <div class="text-center sm:text-left space-y-2 flex-grow">
-                                <h4 class="font-bold text-sm text-slate-700">สร้าง QR Code สำเร็จแล้ว!</h4>
-                                <p class="text-[11px] text-slate-500 leading-relaxed">ข้อมูลที่ฝัง: <br><code id="gen-qr-payload" class="font-mono bg-slate-200 text-slate-600 px-1 py-0.5 rounded text-[10px] break-all block mt-1"></code></p>
-                                <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1">
-                                    <a id="gen-qr-download" href="#" download="my-qr.png" class="inline-flex items-center space-x-1 bg-white hover:bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors">
-                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                                        <span>เซฟไฟล์รูปภาพ</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -1108,12 +1071,12 @@
         let editingBookingId = null; // Booking ID being edited currently
         let editingContactId = null; // Contact ID being edited currently in scanned database
         let currentBookingActivityFilter = 'all'; // Active activity filter for bookings-list view
+        let scannedTicketBookingId = null; // Scanned Ticket ID under confirmation review
 
         let html5QrScanner = null;
         let ticketQrScanner = null; // Separate scanner instance for check-in
         let isScannerRunning = false;
         let isTicketScannerRunning = false;
-        let selectedFormat = 'json';
         
         // Confirmation Modal callback logic variables
         let pendingConfirmCallback = null;
@@ -1575,7 +1538,7 @@
             }
 
             // Hide all tabs
-            const allTabs = ['scan', 'register', 'scheduler', 'ticket', 'database', 'bookings-list', 'generator'];
+            const allTabs = ['scan', 'register', 'scheduler', 'ticket', 'database', 'bookings-list'];
             allTabs.forEach(id => {
                 const el = document.getElementById(`view-${id}`);
                 if (el) el.classList.add('hidden');
@@ -1627,8 +1590,7 @@
                 'bookings-list': 'รายการลงทะเบียน',
                 scheduler: 'ตารางเวลาสแกน',
                 ticket: 'รับบัตรเข้าร่วมงาน',
-                database: 'คลังรายชื่อผู้สแกน',
-                generator: 'สร้าง QR ทดสอบ'
+                database: 'คลังรายชื่อผู้สแกน'
             };
             const mobileHeaderTitle = document.getElementById('mobile-header-title');
             if (mobileHeaderTitle && mobileTitles[tabId]) {
@@ -2467,34 +2429,102 @@
             if (matchedBookings.length > 0) {
                 let selectedBooking = null;
                 let validationErrorMsg = "";
+                let validationCheckResult = null;
 
                 for (let booking of matchedBookings) {
                     const check = validateScanWithActiveSession(booking);
                     if (check.valid) {
                         selectedBooking = booking;
+                        validationCheckResult = check;
                         break;
                     } else {
                         validationErrorMsg = check.reason;
+                        validationCheckResult = check;
                     }
                 }
 
-                if (selectedBooking) {
-                    if (selectedBooking.ticketStatus === 'received') {
-                        showNotification(`คุณ ${selectedBooking.fname} ได้รับบัตรกิจกรรม "${selectedBooking.activity}" ไปแล้วก่อนหน้านี้`, "error");
-                    } else {
-                        selectedBooking.ticketStatus = 'received';
-                        selectedBooking.ticketReceivedTime = new Date().toLocaleString('th-TH');
-                        localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
-                        showNotification(`เช็คอินรับบัตรสำเร็จ: คุณ ${selectedBooking.fname} จำนวน ${selectedBooking.quantity || 1} ใบ`, "success");
-                        updateTicketTabUI();
-                        filterBookings(); 
-                    }
-                } else {
-                    showNotification(`ไม่อนุญาตให้รับบัตร: ${validationErrorMsg}`, "error");
-                }
+                // Show confirmation modal for matched details instead of checking in immediately
+                const displayBooking = selectedBooking || matchedBookings[0];
+                showTicketConfirmModal(displayBooking, validationCheckResult || { valid: false, reason: validationErrorMsg });
             } else {
                 showNotification("ไม่พบประวัติลงทะเบียนของคิวนี้ กรุณาทำการลงทะเบียนก่อน", "error");
             }
+        }
+
+        // Display Custom Dialog Confirm Box for Scanned Ticket
+        function showTicketConfirmModal(booking, validation) {
+            scannedTicketBookingId = booking.id;
+            
+            document.getElementById('tconfirm-name').textContent = `${booking.fname} ${booking.lname}`;
+            document.getElementById('tconfirm-phone').textContent = booking.phone || 'ไม่ได้ระบุ';
+            document.getElementById('tconfirm-qty').textContent = `${booking.quantity || 1} ใบ`;
+            document.getElementById('tconfirm-activity').textContent = `${booking.activity} - ${booking.subActivity || 'ทั่วไป'}`;
+
+            const statusBox = document.getElementById('tconfirm-status-box');
+            const saveBtn = document.getElementById('btn-ticket-confirm-save');
+
+            if (booking.ticketStatus === 'received') {
+                statusBox.className = "p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-700 text-xs font-semibold flex items-center gap-2";
+                statusBox.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0"></i> <span>ผู้ลงทะเบียนเคยรับบัตรไปแล้ว (${booking.ticketReceivedTime || 'เรียบร้อย'})</span>`;
+                saveBtn.disabled = true;
+                saveBtn.className = "px-5 py-2 bg-slate-100 text-slate-400 rounded-xl text-sm font-bold cursor-not-allowed";
+            } else if (!validation.valid) {
+                statusBox.className = "p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs font-semibold flex items-center gap-2";
+                statusBox.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 flex-shrink-0"></i> <span>รอบไม่ตรง: ${validation.reason}</span>`;
+                saveBtn.disabled = true;
+                saveBtn.className = "px-5 py-2 bg-slate-100 text-slate-400 rounded-xl text-sm font-bold cursor-not-allowed";
+            } else {
+                statusBox.className = "p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-semibold flex items-center gap-2";
+                statusBox.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 flex-shrink-0"></i> <span>ผ่านเกณฑ์การตรวจสอบ ตรงตามรอบสแกนที่ระบุ</span>`;
+                saveBtn.disabled = false;
+                saveBtn.className = "px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-1.5";
+            }
+
+            const modal = document.getElementById('ticket-confirm-modal');
+            const innerModal = modal.querySelector('.transform');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                innerModal.classList.remove('scale-95');
+                innerModal.classList.add('scale-100');
+            }, 10);
+            
+            lucide.createIcons();
+        }
+
+        // Close scanned ticket confirmation dialog
+        function closeTicketConfirmModal() {
+            const modal = document.getElementById('ticket-confirm-modal');
+            const innerModal = modal.querySelector('.transform');
+
+            modal.classList.add('opacity-0');
+            innerModal.classList.add('scale-95');
+            innerModal.classList.remove('scale-100');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                scannedTicketBookingId = null;
+            }, 300);
+        }
+
+        // Save Scanned Checkin confirmed from modal
+        function saveScannedTicketCheckin() {
+            if (scannedTicketBookingId === null) return;
+
+            const idx = registrations.findIndex(r => r.id === scannedTicketBookingId);
+            if (idx !== -1) {
+                registrations[idx].ticketStatus = 'received';
+                registrations[idx].ticketReceivedTime = new Date().toLocaleString('th-TH');
+                
+                localStorage.setItem('qr_activity_registrations', JSON.stringify(registrations));
+                showNotification(`เช็คอินรับบัตรสำเร็จ: คุณ ${registrations[idx].fname} จำนวน ${registrations[idx].quantity || 1} ใบ`, "success");
+                
+                updateTicketTabUI();
+                filterBookings();
+            }
+
+            closeTicketConfirmModal();
         }
 
         // Live filtration search for Ticket checking table list
