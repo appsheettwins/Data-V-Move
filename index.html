@@ -165,10 +165,9 @@
                 font-size: 15px;
             }
 
-            /* Same single-layer + larger-type treatment for the side menu drawer */
-            #sidebar .text-\[9px\] { font-size: 11.5px; }
-            #sidebar .text-xs { font-size: 14px; }
-            #sidebar nav button { font-size: 14px; padding-top: 0.6rem; padding-bottom: 0.6rem; }
+            /* Same single-layer + larger-type treatment for the mobile "more menu" bottom sheet */
+            #mobile-more-sheet .text-\[9px\] { font-size: 11.5px; }
+            #mobile-more-sheet .text-xs { font-size: 14px; }
         }
     </style>
 </head>
@@ -221,8 +220,8 @@
         </div>
     </nav>
 
-    <!-- DESKTOP LEFT SIDEBAR & MOBILE SLIDE DRAWER -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 text-slate-200 flex flex-col transform -translate-x-full md:translate-x-0 md:static transition-all duration-200 ease-in-out border-r border-slate-800 shadow-xl md:shadow-none">
+    <!-- DESKTOP LEFT SIDEBAR ONLY (hidden entirely on mobile; mobile menu now lives in the bottom sheet below) -->
+    <aside id="sidebar" class="hidden md:flex md:static w-64 bg-slate-900 text-slate-200 flex-col transition-all duration-200 ease-in-out border-r border-slate-800 z-40">
         <!-- Sidebar Branding Header -->
         <div class="h-14 md:h-16 bg-slate-950 flex items-center px-4 border-b border-slate-800 justify-between sidebar-header">
             <div class="flex items-center space-x-2.5 sidebar-brand-text">
@@ -237,10 +236,6 @@
             <!-- Collapse Button (Desktop Only) -->
             <button onclick="toggleCollapseSidebar()" id="btn-collapse-sidebar" class="hidden md:flex p-1 hover:text-white hover:bg-slate-800 rounded transition-colors" title="Collapse Sidebar">
                 <i data-lucide="chevron-left" class="w-4 h-4" id="collapse-icon"></i>
-            </button>
-            <!-- Close Mobile Side-drawer button -->
-            <button onclick="toggleMobileSidebar()" class="md:hidden p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded">
-                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
         </div>
 
@@ -304,8 +299,69 @@
         </div>
     </aside>
 
-    <!-- Mobile Sidebar Backdrop backdrop -->
-    <div id="sidebar-overlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-35 hidden md:hidden transition-opacity"></div>
+    <!-- Mobile "More Menu" Backdrop (bottom sheet, replaces the old left-side drawer) -->
+    <div id="mobile-more-overlay" onclick="toggleMobileSidebar()" class="md:hidden fixed inset-0 bg-black/60 z-40 hidden transition-opacity"></div>
+
+    <!-- Mobile "More Menu" Bottom Sheet: shows the full menu list rising from the bottom, never from the side -->
+    <div id="mobile-more-sheet" class="md:hidden fixed left-0 right-0 bottom-0 z-40 bg-slate-900 text-slate-200 rounded-t-2xl border-t border-slate-800 shadow-2xl transform translate-y-full transition-transform duration-200 ease-in-out flex flex-col max-h-[75vh]">
+        <div class="flex items-center justify-center pt-2 pb-1">
+            <span class="w-10 h-1 rounded-full bg-slate-700"></span>
+        </div>
+        <div class="flex items-center justify-between px-4 pb-2 border-b border-slate-800">
+            <div class="flex items-center space-x-2">
+                <div class="p-1.5 bg-sky-600 rounded text-white shadow-md shadow-sky-600/20 flex items-center justify-center">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                </div>
+                <h2 class="text-sm font-bold text-white">เมนูทั้งหมด</h2>
+            </div>
+            <button onclick="toggleMobileSidebar()" class="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <nav class="flex-grow p-3 space-y-1 appsheet-scroll overflow-y-auto">
+            <p class="px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">หน้าหลัก</p>
+
+            <button onclick="switchTab('scan')" id="mmtab-scan" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="scan-line" class="w-4 h-4 flex-shrink-0"></i>
+                <span>สแกนบันทึก QR Code</span>
+            </button>
+            <button onclick="switchTab('register')" id="mmtab-register" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="calendar-plus" class="w-4 h-4 flex-shrink-0"></i>
+                <span>ลงทะเบียนกิจกรรม</span>
+            </button>
+            <button onclick="switchTab('bookings-list')" id="mmtab-bookings-list" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="clipboard-list" class="w-4 h-4 flex-shrink-0"></i>
+                <span>ข้อมูลลงทะเบียนทั้งหมด</span>
+                <span id="mmbadge-bookings-count" class="ml-auto py-0.5 px-1.5 text-[9px] font-bold rounded bg-slate-850 text-slate-400">0</span>
+            </button>
+
+            <p class="pt-4 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">เช็คอินและควบคุมสิทธิ์</p>
+            <button onclick="switchTab('ticket')" id="mmtab-ticket" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="ticket" class="w-4 h-4 flex-shrink-0"></i>
+                <span>รับบัตรเข้าร่วมงาน</span>
+            </button>
+            <button onclick="switchTab('scheduler')" id="mmtab-scheduler" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="alarm-clock" class="w-4 h-4 flex-shrink-0"></i>
+                <span>ตารางเวลาสแกน</span>
+                <span id="mmbadge-sessions-count" class="ml-auto py-0.5 px-1.5 text-[9px] font-bold rounded bg-slate-850 text-slate-400">0</span>
+            </button>
+
+            <p class="pt-4 px-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">ทะเบียนประวัติ</p>
+            <button onclick="switchTab('database')" id="mmtab-database" class="w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+                <i data-lucide="user-check" class="w-4 h-4 flex-shrink-0"></i>
+                <span>คลังรายชื่อผู้สแกน</span>
+                <span id="mmbadge-count" class="ml-auto py-0.5 px-1.5 text-[9px] font-bold rounded bg-slate-850 text-slate-400">0</span>
+            </button>
+        </nav>
+
+        <div class="p-3 border-t border-slate-800 bg-slate-950/40 text-[10px] text-slate-500">
+            <div class="flex justify-between items-center">
+                <span>App Version: v3.6 (Prod)</span>
+                <span class="text-emerald-500 flex items-center gap-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content wrapper containing sub-views -->
     <div class="flex-grow flex flex-col min-w-0 overflow-y-auto mt-14 md:mt-0" id="main-content-wrapper">
@@ -1178,21 +1234,19 @@
             }
         }
 
-        // Toggle mobile sidebar view drawer
+        // Toggle mobile "more menu" bottom sheet (rises from the bottom, never from the side)
         function toggleMobileSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const bottomNav = document.getElementById('mobile-bottom-nav');
-            const isHidden = sidebar.classList.contains('-translate-x-full');
-            
+            const sheet = document.getElementById('mobile-more-sheet');
+            const overlay = document.getElementById('mobile-more-overlay');
+            if (!sheet || !overlay) return;
+            const isHidden = sheet.classList.contains('translate-y-full');
+
             if (isHidden) {
-                sidebar.classList.remove('-translate-x-full');
+                sheet.classList.remove('translate-y-full');
                 overlay.classList.remove('hidden');
-                if (bottomNav) bottomNav.classList.add('hidden');
             } else {
-                sidebar.classList.add('-translate-x-full');
+                sheet.classList.add('translate-y-full');
                 overlay.classList.add('hidden');
-                if (bottomNav) bottomNav.classList.remove('hidden');
             }
         }
 
@@ -1431,6 +1485,8 @@
         function updateSessionsUI() {
             document.getElementById('badge-sessions-count').textContent = scanSessions.length;
             syncMobileBadge('mbadge-sessions-count', scanSessions.length);
+            const mmSessionsBadge = document.getElementById('mmbadge-sessions-count');
+            if (mmSessionsBadge) mmSessionsBadge.textContent = scanSessions.length;
             
             const listContainer = document.getElementById('sessions-list-container');
             const selectFilter = document.getElementById('active-session-select');
@@ -1591,14 +1647,12 @@
             const targetTab = document.getElementById(`view-${tabId}`);
             if (targetTab) targetTab.classList.remove('hidden');
 
-            // Close mobile drawer when clicking menu items
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const bottomNav = document.getElementById('mobile-bottom-nav');
-            if (!sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-                if (bottomNav) bottomNav.classList.remove('hidden');
+            // Close mobile "more menu" bottom sheet when clicking a menu item
+            const moreSheet = document.getElementById('mobile-more-sheet');
+            const moreOverlay = document.getElementById('mobile-more-overlay');
+            if (moreSheet && !moreSheet.classList.contains('translate-y-full')) {
+                moreSheet.classList.add('translate-y-full');
+                if (moreOverlay) moreOverlay.classList.add('hidden');
             }
 
             // Toggle top tab styling
@@ -1609,6 +1663,18 @@
                         btn.className = "w-full py-2 px-3 rounded flex items-center space-x-3 text-xs font-medium transition-all duration-150 bg-sky-600 text-white shadow-md shadow-sky-600/10";
                     } else {
                         btn.className = "w-full py-2 px-3 rounded flex items-center space-x-3 text-xs font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60";
+                    }
+                }
+            });
+
+            // Toggle mobile bottom-sheet ("more menu") button styling
+            allTabs.forEach(id => {
+                const mmbtn = document.getElementById(`mmtab-${id}`);
+                if (mmbtn) {
+                    if (id === tabId) {
+                        mmbtn.className = "w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 bg-sky-600 text-white shadow-md shadow-sky-600/10";
+                    } else {
+                        mmbtn.className = "w-full py-2.5 px-3 rounded flex items-center space-x-3 text-sm font-medium transition-all duration-150 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60";
                     }
                 }
             });
@@ -2281,6 +2347,10 @@
             document.getElementById('badge-bookings-count').textContent = registrations.length;
             syncMobileBadge('mbadge-count', database.length);
             syncMobileBadge('mbadge-bookings-count', registrations.length);
+            const mmCountBadge = document.getElementById('mmbadge-count');
+            if (mmCountBadge) mmCountBadge.textContent = database.length;
+            const mmBookingsBadge = document.getElementById('mmbadge-bookings-count');
+            if (mmBookingsBadge) mmBookingsBadge.textContent = registrations.length;
 
             filterData();
             populateBookingSubActivityFilter();
