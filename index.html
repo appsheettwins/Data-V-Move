@@ -354,8 +354,8 @@
                             <i data-lucide="aperture" class="w-5 h-5 text-emerald-600 animate-spin" style="animation-duration: 8s;"></i>
                             <h2 class="font-bold text-slate-700">กล้องสแกน QR Code เพื่อเก็บข้อมูล</h2>
                         </div>
-                        <!-- Camera selection -->
-                        <div class="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <!-- Camera selection (desktop/tablet only — mobile auto-uses the rear camera) -->
+                        <div id="camera-select-wrapper" class="hidden md:flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
                             <select id="camera-select" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-600 w-full sm:w-48">
                                 <option value="">กำลังโหลดกล้อง...</option>
                             </select>
@@ -497,7 +497,7 @@
                     </div>
 
                     <!-- Step 1: Select/Search User -->
-                    <div class="space-y-3">
+                    <div id="reg-search-step" class="space-y-3">
                         <div class="flex justify-between items-center">
                             <label class="block text-sm font-bold text-slate-700">1. ค้นหารายชื่อเดิม หรือป้อนใหม่</label>
                             <span class="text-xs text-slate-400 flex items-center gap-1">
@@ -600,7 +600,7 @@
                         <button id="btn-cancel-edit-booking" onclick="cancelEditBooking()" class="hidden px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-sm font-semibold transition-colors duration-200">
                             ยกเลิกการแก้ไข
                         </button>
-                        <button onclick="clearRegForm()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm font-semibold transition-colors duration-200">
+                        <button id="btn-clear-reg-form" onclick="clearRegForm()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-sm font-semibold transition-colors duration-200">
                             ล้างข้อมูล
                         </button>
                         <button onclick="saveRegistrationData()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold shadow-md shadow-emerald-600/10 transition-colors duration-200 flex items-center space-x-1.5">
@@ -981,7 +981,6 @@
                                     <th class="py-4 px-5">กิจกรรมย่อย (สถานที่)</th>
                                     <th class="py-4 px-5 w-16 text-center">จำนวน</th>
                                     <th class="py-4 px-5">สถานะรับบัตร</th>
-                                    <th class="py-4 px-5">เวลาลงทะเบียน</th>
                                     <th class="py-4 px-5 text-center w-36">จัดการ</th>
                                 </tr>
                             </thead>
@@ -1637,6 +1636,11 @@
             }
         }
 
+        // Detects a mobile/phone viewport (matches the Tailwind `md` breakpoint used across the app)
+        function isMobileViewport() {
+            return window.matchMedia('(max-width: 767px)').matches;
+        }
+
         // Camera Devices Inquiry
         function requestCameraPermissions() {
             Html5Qrcode.getCameras().then(devices => {
@@ -1664,10 +1668,17 @@
 
         // Turn ON QR Camera scanning
         function startScanner() {
-            const cameraId = document.getElementById('camera-select').value;
-            if (!cameraId) {
-                showNotification("กรุณาเลือกอุปกรณ์กล้อง หรือตรวจดูสิทธิ์ใช้งานของเบราว์เซอร์", "error");
-                return;
+            let cameraTarget;
+
+            if (isMobileViewport()) {
+                // On phones, skip manual selection entirely and open the rear camera directly
+                cameraTarget = { facingMode: "environment" };
+            } else {
+                cameraTarget = document.getElementById('camera-select').value;
+                if (!cameraTarget) {
+                    showNotification("กรุณาเลือกอุปกรณ์กล้อง หรือตรวจดูสิทธิ์ใช้งานของเบราว์เซอร์", "error");
+                    return;
+                }
             }
 
             document.getElementById('scanner-placeholder').classList.add('hidden');
@@ -1685,7 +1696,7 @@
             };
 
             html5QrScanner.start(
-                cameraId, 
+                cameraTarget, 
                 config,
                 onScanSuccess,
                 onScanFailure
@@ -2057,6 +2068,10 @@
             document.getElementById('reg-btn-text').textContent = "บันทึกการแก้ไขกิจกรรม";
             document.getElementById('btn-cancel-edit-booking').classList.remove('hidden');
 
+            // Hide the "search existing contact" box and the "clear form" button while editing
+            document.getElementById('reg-search-step').classList.add('hidden');
+            document.getElementById('btn-clear-reg-form').classList.add('hidden');
+
             switchTab('register');
             document.getElementById('view-register').scrollIntoView({ behavior: 'smooth' });
         }
@@ -2067,6 +2082,11 @@
             document.getElementById('register-header-title').textContent = "ลงทะเบียนเข้าร่วมกิจกรรม";
             document.getElementById('reg-btn-text').textContent = "บันทึกกิจกรรมที่จอง";
             document.getElementById('btn-cancel-edit-booking').classList.add('hidden');
+
+            // Restore the search box and clear-form button for normal (new) registration
+            document.getElementById('reg-search-step').classList.remove('hidden');
+            document.getElementById('btn-clear-reg-form').classList.remove('hidden');
+
             clearRegForm();
         }
 
@@ -2270,10 +2290,17 @@
 
         // Manage Ticket scanning camera
         function startTicketScanner() {
-            const cameraId = document.getElementById('camera-select').value;
-            if (!cameraId) {
-                showNotification("กรุณาเลือกกล้องในหน้าสแกนหลักก่อนเปิดใช้งานระบบรับบัตร", "error");
-                return;
+            let cameraTarget;
+
+            if (isMobileViewport()) {
+                // On phones, skip manual selection entirely and open the rear camera directly
+                cameraTarget = { facingMode: "environment" };
+            } else {
+                cameraTarget = document.getElementById('camera-select').value;
+                if (!cameraTarget) {
+                    showNotification("กรุณาเลือกกล้องในหน้าสแกนหลักก่อนเปิดใช้งานระบบรับบัตร", "error");
+                    return;
+                }
             }
 
             document.getElementById('ticket-scanner-placeholder').classList.add('hidden');
@@ -2289,7 +2316,7 @@
             };
 
             ticketQrScanner.start(
-                cameraId,
+                cameraTarget,
                 config,
                 onTicketScanSuccess,
                 onScanFailure
@@ -2480,7 +2507,7 @@
                     const ruleCheck = validateScanWithActiveSession(item);
                     if (ruleCheck.valid) {
                         btnHtml = `
-                            <button onclick="toggleTicketStatus(${item.id}, 'received')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+                            <button onclick="openTicketCheckinModal(registrations.find(r => r.id === ${item.id}))" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
                                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
                                 <span>รับบัตร (${item.quantity || 1} ใบ)</span>
                             </button>
@@ -2588,6 +2615,12 @@
 
             const idx = registrations.findIndex(r => r.id === pendingTicketCheckinId);
             if (idx !== -1) {
+                const ruleCheck = validateScanWithActiveSession(registrations[idx]);
+                if (!ruleCheck.valid) {
+                    showNotification(`ไม่สามารถเช็คอินได้: ${ruleCheck.reason}`, "error");
+                    return;
+                }
+
                 registrations[idx].quantity = qty;
                 registrations[idx].ticketStatus = 'received';
                 registrations[idx].ticketReceivedTime = new Date().toLocaleString('th-TH');
@@ -2855,7 +2888,10 @@
                 tr.className = "hover:bg-slate-50/50 transition-colors";
                 tr.innerHTML = `
                     <td class="py-4 px-5 text-xs text-slate-400">${registrations.length - registrations.indexOf(item)}</td>
-                    <td class="py-4 px-5 font-bold text-slate-800">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</td>
+                    <td class="py-4 px-5 font-bold text-slate-800">
+                        ${escapeHTML(item.fname)} ${escapeHTML(item.lname)}
+                        <span class="block mt-0.5 text-[10px] font-mono font-semibold text-slate-400">รหัส: ${item.id}</span>
+                    </td>
                     <td class="py-4 px-5 text-slate-600 font-mono font-medium">${escapeHTML(item.phone)}</td>
                     <td class="py-4 px-5">
                         <span class="inline-flex items-center gap-1 py-1 px-2.5 border rounded-full text-xs font-bold ${actBadgeCls}">
@@ -2869,7 +2905,6 @@
                             ${isTicketReceived ? 'รับแล้ว' : 'ยังไม่รับ'}
                         </span>
                     </td>
-                    <td class="py-4 px-5 text-xs text-slate-500">${item.timestamp}</td>
                     <td class="py-4 px-5 text-center">
                         <div class="inline-flex space-x-1">
                             <button onclick="editBooking(${item.id})" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-emerald-600 transition-colors" title="แก้ไขการลงทะเบียน">
@@ -2891,6 +2926,7 @@
                         <div>
                             <span class="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-full">#${registrations.length - registrations.indexOf(item)}</span>
                             <h4 class="font-bold text-slate-800 text-base mt-1.5">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</h4>
+                            <p class="text-[10px] font-mono font-semibold text-slate-400 mt-0.5">รหัส: ${item.id}</p>
                         </div>
                         <div class="flex space-x-1">
                             <button onclick="editBooking(${item.id})" class="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors" title="แก้ไข">
@@ -2924,8 +2960,7 @@
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
                         <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">กิจกรรมย่อย (วัน / สถานที่)</p>
                         <p class="text-xs font-bold text-slate-700">${escapeHTML(displaySub)}</p>
-                        <div class="flex justify-between items-center pt-2">
-                            <p class="text-[10px] text-slate-400">เวลาลงทะเบียน: ${item.timestamp}</p>
+                        <div class="flex justify-end items-center pt-2">
                             <span class="inline-flex py-0.5 px-2 border rounded text-[10px] font-bold ${ticketBadgeCls}">
                                 ${isTicketReceived ? 'รับบัตรแล้ว' : 'ยังไม่รับบัตร'}
                             </span>
