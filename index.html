@@ -1777,18 +1777,12 @@
             input.value = '';
         }
 
-        // Smart Data Parser Engine
-        function parseAndPopulateData(text) {
+        // Shared robust extraction of contact fields from arbitrary QR text.
+        // Handles JSON (English or Thai keys), comma/pipe (2 or 3 parts), and vCard.
+        // Used by both the main scan tab and the ticket check-in scanner so they recognize
+        // exactly the same set of QR formats.
+        function extractContactFromQrText(text) {
             const cleanedText = text.trim();
-
-            // Reject duplicate QR codes: block entry if this exact raw code was already scanned/saved
-            const isDuplicate = database.some(item => item.qrRaw && item.qrRaw.trim() === cleanedText);
-            if (isDuplicate) {
-                showNotification("ข้อมูลรหัส QR Code นี้เคยถูกสแกนบันทึกไว้แล้ว ไม่สามารถกรอกข้อมูลซ้ำได้", "error");
-                document.getElementById('result-container').classList.add('hidden');
-                return;
-            }
-
             let fname = "";
             let lname = "";
             let phone = "";
@@ -1800,7 +1794,7 @@
                     fname = obj.fname || obj.firstName || obj.name || obj.ชื่อ || "";
                     lname = obj.lname || obj.lastName || obj.surname || obj.นามสกุล || "";
                     phone = obj.phone || obj.tel || obj.phoneNo || obj.เบอร์โทร || "";
-                    
+
                     if (!fname && (obj.name || obj.fullName || obj.ชื่อจริง)) {
                         const full = obj.name || obj.fullName || obj.ชื่อจริง;
                         const parts = full.split(' ');
@@ -1842,7 +1836,7 @@
             if (!fname && cleanedText.toUpperCase().includes('BEGIN:VCARD')) {
                 const fnMatch = cleanedText.match(/FN:(.*)/i);
                 const telMatch = cleanedText.match(/TEL.*:(.*)/i);
-                
+
                 if (fnMatch) {
                     const nameParts = fnMatch[1].trim().split(' ');
                     fname = nameParts[0] || "";
@@ -1852,6 +1846,23 @@
                     phone = telMatch[1].trim().replace(/[- ]/g, '');
                 }
             }
+
+            return { fname, lname, phone };
+        }
+
+        // Smart Data Parser Engine
+        function parseAndPopulateData(text) {
+            const cleanedText = text.trim();
+
+            // Reject duplicate QR codes: block entry if this exact raw code was already scanned/saved
+            const isDuplicate = database.some(item => item.qrRaw && item.qrRaw.trim() === cleanedText);
+            if (isDuplicate) {
+                showNotification("ข้อมูลรหัส QR Code นี้เคยถูกสแกนบันทึกไว้แล้ว ไม่สามารถกรอกข้อมูลซ้ำได้", "error");
+                document.getElementById('result-container').classList.add('hidden');
+                return;
+            }
+
+            const { fname, lname, phone } = extractContactFromQrText(cleanedText);
 
             document.getElementById('res-fname').value = fname;
             document.getElementById('res-lname').value = lname;
@@ -2394,49 +2405,40 @@
         // On successfully scanning ticket
         function onTicketScanSuccess(decodedText) {
             playSuccessSound();
-            
-            // Try parsing scanned details
+
+            const cleanedText = decodedText.trim();
             let fname = "";
             let lname = "";
             let phone = "";
-            const cleanedText = decodedText.trim();
 
-            if (cleanedText.startsWith('{') && cleanedText.endsWith('}')) {
-                try {
-                    const obj = JSON.parse(cleanedText);
-                    fname = obj.fname || obj.firstName || obj.name || "";
-                    lname = obj.lname || obj.lastName || obj.surname || "";
-                    phone = obj.phone || obj.tel || "";
-                } catch (e) {}
+            // Step 1: check if this exact QR was already scanned & saved in the contacts database
+            // (most reliable source, since it's the exact identity captured at first scan)
+            const knownContact = database.find(item => item.qrRaw && item.qrRaw.trim() === cleanedText);
+            if (knownContact) {
+                fname = knownContact.fname;
+                lname = knownContact.lname;
+                phone = knownContact.phone;
+            } else {
+                // Step 2: fall back to parsing the raw QR text directly, using the same
+                // full-format parser as the main scan tab (JSON incl. Thai keys, vCard, comma/pipe)
+                const extracted = extractContactFromQrText(cleanedText);
+                fname = extracted.fname;
+                lname = extracted.lname;
+                phone = extracted.phone;
             }
 
-            if (!fname && cleanedText.includes(',')) {
-                const parts = cleanedText.split(',');
-                if (parts.length >= 3) {
-                    fname = parts[0].trim();
-                    lname = parts[1].trim();
-                    phone = parts[2].trim();
-                }
-            } else if (!fname && cleanedText.includes('|')) {
-                const parts = cleanedText.split('|');
-                if (parts.length >= 3) {
-                    fname = parts[0].trim();
-                    lname = parts[1].trim();
-                    phone = parts[2].trim();
-                }
-            }
-
-            // Search in registrants list
+            // Search in registrants list — try name match first, then phone, then a loose fuzzy search
             let matchedBookings = [];
             if (fname && lname) {
                 matchedBookings = registrations.filter(r => 
-                    r.fname.toLowerCase() === fname.toLowerCase() && 
-                    r.lname.toLowerCase() === lname.toLowerCase()
+                    r.fname.trim().toLowerCase() === fname.trim().toLowerCase() && 
+                    r.lname.trim().toLowerCase() === lname.trim().toLowerCase()
                 );
-            } else if (phone) {
+            }
+            if (matchedBookings.length === 0 && phone) {
                 matchedBookings = registrations.filter(r => r.phone.replace(/[- ]/g, '') === phone.replace(/[- ]/g, ''));
-            } else {
-                // Try fuzzy full search
+            }
+            if (matchedBookings.length === 0) {
                 matchedBookings = registrations.filter(r => 
                     cleanedText.includes(r.fname) || cleanedText.includes(r.phone)
                 );
