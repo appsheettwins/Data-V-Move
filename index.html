@@ -298,7 +298,7 @@
                         </div>
                         <div>
                             <label for="edit-contact-phone" class="block text-xs font-bold text-slate-600 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
-                            <input type="tel" id="edit-contact-phone" inputmode="numeric" oninput="filterNumericInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                            <input type="tel" id="edit-contact-phone" inputmode="numeric" maxlength="10" oninput="filterPhoneInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
                         </div>
                     </div>
                     <div>
@@ -454,7 +454,7 @@
                                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                                     <i data-lucide="phone" class="w-4 h-4"></i>
                                 </span>
-                                <input type="tel" id="res-phone" placeholder="เช่น 0812345678" inputmode="numeric" oninput="filterNumericInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 text-sm">
+                                <input type="tel" id="res-phone" placeholder="เช่น 0812345678" inputmode="numeric" maxlength="10" oninput="filterPhoneInput(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-slate-800 text-sm">
                             </div>
                         </div>
                     </div>
@@ -486,7 +486,7 @@
 
             <!-- VIEW 2: REGISTRATION FORM -->
             <div id="view-register" class="space-y-6 hidden">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+                <div class="bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-sm border-0 sm:border sm:border-slate-100 -mx-4 sm:mx-0 p-4 sm:p-6 space-y-6">
                     <!-- Heading -->
                     <div class="border-b border-slate-100 pb-4">
                         <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
@@ -523,7 +523,7 @@
                     </div>
 
                     <!-- Step 1.5: Display Selected / Manual Inputs -->
-                    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-transparent sm:bg-slate-50/50 p-0 sm:p-4 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label for="reg-fname" class="block text-xs font-bold text-slate-600 mb-1">ชื่อจริง <span class="text-red-500">*</span></label>
                             <input type="text" id="reg-fname" placeholder="ชื่อจริงผู้ลงทะเบียน" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
@@ -534,7 +534,7 @@
                         </div>
                         <div>
                             <label for="reg-phone" class="block text-xs font-bold text-slate-600 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
-                            <input type="tel" id="reg-phone" placeholder="เช่น 0812345678" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                            <input type="tel" id="reg-phone" placeholder="เช่น 0812345678" inputmode="numeric" maxlength="10" oninput="filterPhoneInput(this)" class="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
                         </div>
                     </div>
 
@@ -613,7 +613,7 @@
 
             <!-- VIEW 2.1: SCAN SESSION SCHEDULER -->
             <div id="view-scheduler" class="space-y-6 hidden">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+                <div class="bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-sm border-0 sm:border sm:border-slate-100 -mx-4 sm:mx-0 p-4 sm:p-6 space-y-6">
                     <div class="border-b border-slate-100 pb-4 flex justify-between items-center">
                         <div>
                             <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
@@ -629,7 +629,7 @@
                     </div>
 
                     <!-- Add New / Edit Session Form -->
-                    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-4">
+                    <div class="bg-transparent sm:bg-slate-50/50 p-0 sm:p-4 rounded-none sm:rounded-xl border-0 sm:border sm:border-slate-100 space-y-4">
                         <h3 id="sch-form-title" class="text-xs font-bold text-slate-600 uppercase tracking-wider">เพิ่มกำหนดเวลาล่วงหน้า</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
                             <div>
@@ -968,8 +968,8 @@
                     </div>
                 </div>
 
-                <!-- Desktop Bookings Table -->
-                <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <!-- Bookings Table (same layout on mobile and desktop) -->
+                <div class="bg-white rounded-none sm:rounded-2xl shadow-sm border-y sm:border border-slate-100 overflow-hidden -mx-4 sm:mx-0">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse" id="db-bookings-table">
                             <thead>
@@ -991,8 +991,8 @@
                     </div>
                 </div>
 
-                <!-- Mobile Bookings Card Container -->
-                <div id="booking-cards-container" class="space-y-3 md:hidden">
+                <!-- Mobile Bookings Card Container (kept for compatibility, no longer shown) -->
+                <div id="booking-cards-container" class="hidden">
                     <!-- Populated dynamically -->
                 </div>
 
@@ -2920,56 +2920,6 @@
                 `;
                 tBodyBookings.appendChild(tr);
 
-                // Populate Mobile Layout Card
-                const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-3";
-                card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <span class="text-[10px] bg-slate-100 text-slate-500 font-mono px-2 py-0.5 rounded-full">#${registrations.length - registrations.indexOf(item)}</span>
-                            <h4 class="font-bold text-slate-800 text-base mt-1.5">${escapeHTML(item.fname)} ${escapeHTML(item.lname)}</h4>
-                            <p class="text-[10px] font-mono font-semibold text-slate-400 mt-0.5">รหัส: ${item.id}</p>
-                        </div>
-                        <div class="flex space-x-1">
-                            <button onclick="editBooking(${item.id})" class="p-2 hover:bg-emerald-50 rounded-lg text-emerald-600 transition-colors" title="แก้ไข">
-                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="deleteBookingRecord(${item.id})" class="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors" title="ลบข้อมูล">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 gap-1 text-xs pt-2 border-t border-slate-50">
-                        <div>
-                            <p class="text-slate-400">เบอร์โทรศัพท์</p>
-                            <p class="font-semibold text-slate-700 font-mono mt-0.5">${escapeHTML(item.phone)}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-400">กิจกรรมหลัก</p>
-                            <div class="mt-1">
-                                <span class="inline-flex py-0.5 px-2 border rounded-full text-[10px] font-bold ${actBadgeCls}">
-                                    ${escapeHTML(item.activity)}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-slate-400">จำนวนบัตร</p>
-                            <p class="font-bold text-slate-800 text-sm mt-0.5">${item.quantity || 1} ใบ</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
-                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">กิจกรรมย่อย (วัน / สถานที่)</p>
-                        <p class="text-xs font-bold text-slate-700">${escapeHTML(displaySub)}</p>
-                        <div class="flex justify-end items-center pt-2">
-                            <span class="inline-flex py-0.5 px-2 border rounded text-[10px] font-bold ${ticketBadgeCls}">
-                                ${isTicketReceived ? 'รับบัตรแล้ว' : 'ยังไม่รับบัตร'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-                cardContainer.appendChild(card);
             });
 
             lucide.createIcons();
@@ -3189,6 +3139,19 @@
         }
 
         // Strip any non-numeric characters as the user types (used for phone number fields)
+        // Thai mobile/landline numbers are 10 digits, so this also caps the length.
+        function filterPhoneInput(inputEl) {
+            let filtered = inputEl.value.replace(/[^0-9]/g, '');
+            if (filtered.length > 10) {
+                filtered = filtered.slice(0, 10);
+            }
+            if (inputEl.value !== filtered) {
+                inputEl.value = filtered;
+            }
+        }
+
+        // Strip any non-numeric characters as the user types (used for the manual QR text field,
+        // which may be longer than 10 digits, so no length cap here)
         function filterNumericInput(inputEl) {
             const filtered = inputEl.value.replace(/[^0-9]/g, '');
             if (inputEl.value !== filtered) {
